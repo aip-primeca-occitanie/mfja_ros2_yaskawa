@@ -1,0 +1,13 @@
+<?xml version="1.0" ?>
+<robot name="env" xmlns:xacro="http://www.ros.org/wiki/xacro" >
+
+<material name="silver">
+  <color rgba="0.700 0.700 0.700 1.000"/>
+</material>
+<material name="dark_gray">
+  <color rgba="0.3 0.3 0.3 1.000"/>
+</material>
+<material name="white_smoke">
+  <color rgba="0.7607 0.7607 0.7607 1.000"/>
+</material>
+</robot>

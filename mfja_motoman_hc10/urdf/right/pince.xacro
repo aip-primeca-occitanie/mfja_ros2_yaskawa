@@ -1,0 +1,131 @@
+<?xml version="1.0" ?>
+
+<robot name="hand" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <!-- Ajout des différentes pièces de la pinces / couleurs définies dans le fichier materials.xacro-->
+    <link name="cylinder_link">
+      <visual>
+        <geometry>
+          <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/cylinder.stl" scale="1 1 1"/>
+        </geometry>
+        <material name="white_smoke"/>
+      </visual>
+      <collision>
+        <geometry>
+          <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/cylinder.stl" scale="1 1 1"/>
+        </geometry>
+      </collision>
+    </link>  
+    <link name="end_effector_link">
+        <visual>
+          <geometry>
+            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/GEH6040IL-03-B(01).stl" scale="0.001 0.001 0.001"/>
+          </geometry>
+          <material name="dark_gray"/>
+        </visual>
+        <collision>
+          <geometry>
+            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/GEH6040IL-03-B(01).stl" scale="0.001 0.001 0.001"/>
+          </geometry>
+        </collision>
+      </link>
+      <link name="mors_link1">
+        <visual>
+          <geometry>
+            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/UB5006AL.stl" scale="0.001 0.001 0.001"/>
+          </geometry>
+          <material name="silver"/>
+        </visual>
+        <collision>
+          <geometry>
+            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/UB5006AL.stl" scale="0.001 0.001 0.001"/>
+          </geometry>
+        </collision>
+      </link>
+      <link name="mors_link2">
+        <visual>
+          <geometry>
+            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/UB5006AL.stl" scale="0.001 0.001 0.001"/>
+          </geometry>
+          <material name="silver"/>
+        </visual>
+        <collision>
+          <geometry>
+            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/UB5006AL.stl" scale="0.001 0.001 0.001"/>
+          </geometry>
+        </collision>
+      </link>
+      <link name="adaptater_plate_link">
+        <visual>
+          <geometry>
+            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/APR000009.stl" scale="0.001 0.001 0.001"/>
+          </geometry>
+          <material name="dark_gray"/>
+        </visual>
+        <collision>
+          <geometry>
+            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/APR000009.stl" scale="0.001 0.001 0.001"/>
+          </geometry>
+        </collision>
+      </link>
+      <link name="adaptater_mors1_link">
+        <visual>
+          <geometry>
+            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/APGEH6000.stl" scale="0.001 0.001 0.001"/>
+          </geometry>
+          <material name="dark_gray"/>
+        </visual>
+        <collision>
+          <geometry>
+            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/APGEH6000.stl" scale="0.001 0.001 0.001"/>
+          </geometry>
+        </collision>
+      </link>
+      <link name="adaptater_mors2_link">
+        <visual>
+          <geometry>
+            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/APGEH6000.stl" scale="0.001 0.001 0.001"/>
+          </geometry>
+          <material name="dark_gray"/>
+        </visual>
+        <collision>
+          <geometry>
+            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/APGEH6000.stl" scale="0.001 0.001 0.001"/>
+          </geometry>
+        </collision>
+      </link>
+      <!-- Création des joints  -->
+      <joint name="cylinder_adaptater_plate" type="fixed" >
+        <origin rpy="-1.5708 0 0" xyz="0 0 0.027" />
+        <parent link="cylinder_link" />
+        <child link="adaptater_plate_link" />
+      </joint>     
+      <joint name="adaptater_plate_end_effector" type="fixed" >
+        <origin rpy="0 0 0" xyz="0 -0.012 0" />
+        <parent link="adaptater_plate_link" />
+        <child link="end_effector_link" />
+      </joint>
+      <!-- ce joint doit être de type prismatique -->
+      <joint name="end_effector_adaptater_mors1" type="prismatic" >
+        <origin rpy="3.14 0 0" xyz="-0.079 -0.045 0.006" />
+        <parent link="end_effector_link" />
+        <child link="adaptater_mors1_link" />
+        <limit effort="1000.0" lower="0" upper="0.035" velocity="0.5"/>
+      </joint>
+      <!-- ce joint doit être de type prismatique -->
+      <joint name="end_effector_adaptater_mors2" type="prismatic" >
+        <origin rpy="3.14 3.14 0" xyz="0.078 -0.045 -0.023" />
+        <parent link="end_effector_link" />
+        <child link="adaptater_mors2_link" />
+        <limit effort="1000.0" lower="0" upper="0.035" velocity="0.5"/>
+      </joint>
+      <joint name="end_effector_mors1" type="fixed" >
+        <origin rpy="0 0 0" xyz="0.007 0.011 0.015" />
+        <parent link="adaptater_mors1_link" />
+        <child link="mors_link1" />
+      </joint>
+      <joint name="end_effector_mors2" type="fixed" >
+        <origin rpy="0 0 0" xyz="0.007 0.011 0.015" />
+        <parent link="adaptater_mors2_link" />
+        <child link="mors_link2" />
+      </joint>
+</robot>

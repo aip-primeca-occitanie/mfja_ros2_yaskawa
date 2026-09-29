@@ -1,0 +1,480 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--This does not replace URDF, and is not an extension of URDF.
+    This is a format for representing semantic information about the robot structure.
+    A URDF file must exist for this robot as well, where the joints and the links that are referenced are defined
+-->
+<robot name="yaskawa_R">
+    <!--GROUPS: Representation of a set of joints and links. This can be useful for specifying DOF to plan for, defining arms, end effectors, etc-->
+    <!--LINKS: When a link is specified, the parent joint of that link (if it exists) is automatically included-->
+    <!--JOINTS: When a joint is specified, the child link of that joint (which will always exist) is automatically included-->
+    <!--CHAINS: When a chain is specified, all the links along the chain (including endpoints) are included in the group. Additionally, all the joints that are parents to included links are also included. This means that joints along the chain and the parent joint of the base link are included in the group-->
+    <!--SUBGROUPS: Groups can also be formed by referencing to already defined group names-->
+
+    <!-- ******** A LIRE !!!!! *********
+    Les groupes représentent une séquence de points et décrit un mouvement de pick and place pour le robot.
+    Il y a 8 déplacements possibles, donc 8 groupes. Les points doivent être placés dans l'ordre séquenciel du début du mouvement du robot vers la fin.
+    Deux mouvements sont réalisés par le script execute_trajectory et est composé de :
+    -remise du robot en position home (avec l'initialisation et ompl)
+    - le mouvement de pick and place (navette vers poste ou poste vers navette)
+    DN3P4  = (Deplacement de navette 3 vers poste 4) les emplacements des postes et des navettes différent en fonction de la position du robot par rapport à la cellule
+    Les deux yaskawas sont en configuration basse, et le staubli et le kuka sont en configuration haute (cf schéma des configurations).
+    La séquence est construite de la même manière pour chaque déplacement à savoir :
+    Après l'initialisation, le robot est en position home, pince ouverte.
+    - 1 point intermédiaire pour positionner le robot au dessus de la zone où l'objet à saisir se trouve
+    - 1 point au niveau de l'objet
+    - 1 point pour fermer la pince et ainsi saisir l'objet (ces derniers sont définis dans le groupe appartenant à la pince : Open et Close)
+    - 1 point pour revenir au dessus de la zone de travail (le même que le premier point)
+    - 1 point intermédiaire entre la zone de prise de l'objet et la zone de dépôt
+    - 1 point au dessus de la zone de dépôt
+    - 1 point sur la zone de dépôt
+    - 1 point pour ouvrir la pince 
+    - 1 point pour revenir au dessus de la zone de dépôt
+    - 1 point pour revenir en position home
+    Il y a donc 10 points au total, dont 8 par groupes DNxPx et 2 appartenant à la pince.
+    Si on souhaite ajouter des points (ou en enlever), il faudra modifier le script qui construit la trajectoire pour redéfinir les points où le blend radius peut être appliqué.
+    La position home du yaskawa a été légérement modifiée pour éviter une collision de la pince avec le robot lors de son ouverture (qui fait partie de l'initialisation 
+    effectuée avant le mouvement de pick and place). -->
+
+    <group name="DN3P4">
+        <chain base_link="base_link" tip_link="tool0" />
+    </group>
+
+    <group name="DN2P1">
+        <chain base_link="base_link" tip_link="tool0" />
+    </group>
+    
+    <group name="DP1N2">
+        <chain base_link="base_link" tip_link="tool0" />
+    </group>
+
+    <group name="DN2P4">
+        <chain base_link="base_link" tip_link="tool0" />
+    </group>
+
+    <group name="hand_group">
+        <link name="cylinder_link"/>
+        <link name="adaptater_plate_link"/>
+        <link name="end_effector_link"/>
+        <link name="adaptater_mors1_link"/>
+        <link name="adaptater_mors2_link"/>
+        <link name="mors_link1"/>
+        <link name="mors_link2"/>
+    </group>
+
+    <!--GROUP STATES: Purpose: Define a named state for a particular group, in terms of joint values. This is useful to define states like 'folded arms'-->
+
+    <!-- Start Group hand_group -->
+    <group_state name="Open" group="hand_group">
+        <joint name="end_effector_adaptater_mors1" value="0.00" />
+        <joint name="end_effector_adaptater_mors2" value="0.00" />
+    </group_state>
+        <group_state name="Close" group="hand_group">
+        <joint name="end_effector_adaptater_mors1" value="0.03" />
+        <joint name="end_effector_adaptater_mors2" value="0.03" />
+    </group_state>
+    <!-- End Group hand_group -->
+
+    <!-- Start Group DN3P4 -->
+    <!-- <group_state name="home" group="DN3P4">
+        <joint name="joint_1_s" value="0" />
+        <joint name="joint_2_l" value="0" />
+        <joint name="joint_3_u" value="0" />
+        <joint name="joint_4_r" value="0" />
+        <joint name="joint_5_b" value="0" />
+        <joint name="joint_6_t" value="0" />
+    </group_state> -->
+    <group_state name="Above_shuttle" group="DN3P4">
+        <joint name="joint_1_s" value="2.35619" />
+        <joint name="joint_2_l" value="0.226893" />
+        <joint name="joint_3_u" value="2.16421" />
+        <joint name="joint_4_r" value="-0.0174533" />
+        <joint name="joint_5_b" value="-1.93732" />
+        <joint name="joint_6_t" value="2.30383" />
+    </group_state>
+    <group_state name="On_shuttle" group="DN3P4">
+        <joint name="joint_1_s" value="2.37365" />
+        <joint name="joint_2_l" value="0.174533" />
+        <joint name="joint_3_u" value="1.69297" />
+        <joint name="joint_4_r" value="-0.0174533" />
+        <joint name="joint_5_b" value="-1.53589" />
+        <joint name="joint_6_t" value="2.30383" />
+    </group_state>
+    <group_state name="Above_shuttle" group="DN3P4">
+        <joint name="joint_1_s" value="2.35619" />
+        <joint name="joint_2_l" value="0.226893" />
+        <joint name="joint_3_u" value="2.16421" />
+        <joint name="joint_4_r" value="-0.0174533" />
+        <joint name="joint_5_b" value="-1.93732" />
+        <joint name="joint_6_t" value="2.30383" />
+    </group_state>
+    <group_state name="Middle" group="DN3P4">
+        <joint name="joint_1_s" value="1.5" />
+        <joint name="joint_2_l" value="0.25" />
+        <joint name="joint_3_u" value="2.2" />
+        <joint name="joint_4_r" value="0.0" />
+        <joint name="joint_5_b" value="-1.93" />
+        <joint name="joint_6_t" value="0.78" />
+    </group_state>
+    <group_state name="Above_working_space" group="DN3P4">
+	    <joint name="joint_1_s" value="0.610865" />
+        <joint name="joint_2_l" value="0.663225" />
+        <joint name="joint_3_u" value="1.55334" />
+        <joint name="joint_4_r" value="0.0349066" />
+        <joint name="joint_5_b" value="-0.872665" />
+        <joint name="joint_6_t" value="2.19911" />
+    </group_state>
+    <group_state name="On_working_space" group="DN3P4">
+        <joint name="joint_1_s" value="0.593412" />
+        <joint name="joint_2_l" value="0.820305" />
+        <joint name="joint_3_u" value="1.46608" />
+        <joint name="joint_4_r" value="-0.0174533" />
+        <joint name="joint_5_b" value="-0.610865" />
+        <joint name="joint_6_t" value="2.19911" />
+    </group_state>
+    <group_state name="Above_working_space" group="DN3P4">
+	 <joint name="joint_1_s" value="0.610865" />
+        <joint name="joint_2_l" value="0.663225" />
+        <joint name="joint_3_u" value="1.55334" />
+        <joint name="joint_4_r" value="0.0349066" />
+        <joint name="joint_5_b" value="-0.872665" />
+        <joint name="joint_6_t" value="2.19911" />
+    </group_state>
+    <group_state name="home" group="DN3P4">
+        <joint name="joint_1_s" value="0" />
+        <joint name="joint_2_l" value="0" />
+        <joint name="joint_3_u" value="0" />
+        <joint name="joint_4_r" value="0" />
+        <joint name="joint_5_b" value="0" />
+        <joint name="joint_6_t" value="1.57079" />
+    </group_state>
+    <!-- End Group DN3P4 -->
+
+    <!-- Start Group DN2P1 -->
+    <!-- <group_state name="home" group="DN2P1">
+        <joint name="joint_1_s" value="0" />
+        <joint name="joint_2_l" value="0" />
+        <joint name="joint_3_u" value="0" />
+        <joint name="joint_4_r" value="0" />
+        <joint name="joint_5_b" value="0" />
+        <joint name="joint_6_t" value="0" />
+    </group_state> -->
+    <group_state name="Above_shuttle" group="DN2P1">
+        <joint name="joint_1_s" value="2.75762" />
+        <joint name="joint_2_l" value="0.541052" />
+        <joint name="joint_3_u" value="2.89725" />
+        <joint name="joint_4_r" value="-0.0523599" />
+        <joint name="joint_5_b" value="-2.35619" />
+        <joint name="joint_6_t" value="0.349066" />
+    </group_state>
+    <group_state name="On_shuttle" group="DN2P1">
+        <joint name="joint_1_s" value="2.75762" />
+        <joint name="joint_2_l" value="0.314159" />
+        <joint name="joint_3_u" value="1.90241" />
+        <joint name="joint_4_r" value="-0.0349066" />
+        <joint name="joint_5_b" value="-1.62316" />
+        <joint name="joint_6_t" value="0.366519" />
+    </group_state>
+    <group_state name="Above_shuttle" group="DN2P1">
+        <joint name="joint_1_s" value="2.75762" />
+        <joint name="joint_2_l" value="0.541052" />
+        <joint name="joint_3_u" value="2.89725" />
+        <joint name="joint_4_r" value="-0.0523599" />
+        <joint name="joint_5_b" value="-2.35619" />
+        <joint name="joint_6_t" value="0.349066" />
+    </group_state>
+    <group_state name="Middle" group="DN2P1">
+        <joint name="joint_1_s" value="1.5" />
+        <joint name="joint_2_l" value="0.25" />
+        <joint name="joint_3_u" value="2.2" />
+        <joint name="joint_4_r" value="0.0" />
+        <joint name="joint_5_b" value="-1.93" />
+        <joint name="joint_6_t" value="0.78" />
+    </group_state>
+    <group_state name="Above_working_space" group="DN2P1">
+	 <joint name="joint_1_s" value="0.610865" />
+        <joint name="joint_2_l" value="0.663225" />
+        <joint name="joint_3_u" value="1.55334" />
+        <joint name="joint_4_r" value="0.0349066" />
+        <joint name="joint_5_b" value="-0.872665" />
+        <joint name="joint_6_t" value="2.19911" />
+    </group_state>
+    <group_state name="On_working_space" group="DN2P1">
+         <joint name="joint_1_s" value="0.593412" />
+        <joint name="joint_2_l" value="0.820305" />
+        <joint name="joint_3_u" value="1.46608" />
+        <joint name="joint_4_r" value="-0.0174533" />
+        <joint name="joint_5_b" value="-0.610865" />
+        <joint name="joint_6_t" value="2.19911" />
+    </group_state>
+    <group_state name="Above_working_space" group="DN2P1">
+	 <joint name="joint_1_s" value="0.610865" />
+        <joint name="joint_2_l" value="0.663225" />
+        <joint name="joint_3_u" value="1.55334" />
+        <joint name="joint_4_r" value="0.0349066" />
+        <joint name="joint_5_b" value="-0.872665" />
+        <joint name="joint_6_t" value="2.19911" />
+    </group_state>
+    <group_state name="home" group="DN2P1">
+        <joint name="joint_1_s" value="0" />
+        <joint name="joint_2_l" value="0" />
+        <joint name="joint_3_u" value="0" />
+        <joint name="joint_4_r" value="0" />
+        <joint name="joint_5_b" value="0" />
+        <joint name="joint_6_t" value="1.57079" />
+    </group_state>
+    <!-- End Group DN2P1 -->
+
+    <!-- Start Group DP1N2 -->
+    <!-- <group_state name="home" group="DP1N2">
+        <joint name="joint_1_s" value="0" />
+        <joint name="joint_2_l" value="0" />
+        <joint name="joint_3_u" value="0" />
+        <joint name="joint_4_r" value="0" />
+        <joint name="joint_5_b" value="0" />
+        <joint name="joint_6_t" value="0" />
+    </group_state> -->
+    <group_state name="Above_working_space" group="DP1N2">
+	 <joint name="joint_1_s" value="0.610865" />
+        <joint name="joint_2_l" value="0.663225" />
+        <joint name="joint_3_u" value="1.55334" />
+        <joint name="joint_4_r" value="0.0349066" />
+        <joint name="joint_5_b" value="-0.872665" />
+        <joint name="joint_6_t" value="2.19911" />
+    </group_state>
+    <group_state name="On_working_space" group="DP1N2">
+        <joint name="joint_1_s" value="0.593412" />
+        <joint name="joint_2_l" value="0.820305" />
+        <joint name="joint_3_u" value="1.46608" />
+        <joint name="joint_4_r" value="-0.0174533" />
+        <joint name="joint_5_b" value="-0.610865" />
+        <joint name="joint_6_t" value="2.19911" />
+    </group_state>
+    <group_state name="Above_working_space" group="DP1N2">
+	 <joint name="joint_1_s" value="0.610865" />
+        <joint name="joint_2_l" value="0.663225" />
+        <joint name="joint_3_u" value="1.55334" />
+        <joint name="joint_4_r" value="0.0349066" />
+        <joint name="joint_5_b" value="-0.872665" />
+        <joint name="joint_6_t" value="2.19911" />
+    </group_state>
+    <group_state name="Middle" group="DP1N2">
+        <joint name="joint_1_s" value="1.5" />
+        <joint name="joint_2_l" value="0.25" />
+        <joint name="joint_3_u" value="2.2" />
+        <joint name="joint_4_r" value="0.0" />
+        <joint name="joint_5_b" value="-1.93" />
+        <joint name="joint_6_t" value="0.78" />
+    </group_state>
+    <group_state name="Above_shuttle" group="DP1N2">
+        <joint name="joint_1_s" value="2.35619" />
+        <joint name="joint_2_l" value="0.593412" />
+        <joint name="joint_3_u" value="2.60054" />
+        <joint name="joint_4_r" value="0.0174533" />
+        <joint name="joint_5_b" value="-1.95477" />
+        <joint name="joint_6_t" value="0.820305" />
+    </group_state>
+    <group_state name="On_shuttle" group="DP1N2">DPN2
+        <joint name="joint_1_s" value="2.30383" />
+        <joint name="joint_2_l" value="0.610865" />
+        <joint name="joint_3_u" value="2.3911" />
+        <joint name="joint_4_r" value="-0.0523599" />
+        <joint name="joint_5_b" value="-1.81514" />
+        <joint name="joint_6_t" value="0.715585" />
+    </group_state>
+    <group_state name="Above_shuttle" group="DP1N2">
+        <joint name="joint_1_s" value="2.35619" />
+        <joint name="joint_2_l" value="0.593412" />
+        <joint name="joint_3_u" value="2.60054" />
+        <joint name="joint_4_r" value="0.0174533" />
+        <joint name="joint_5_b" value="-1.95477" />
+        <joint name="joint_6_t" value="0.820305" />
+    </group_state>
+    <group_state name="home" group="DP1N2">
+        <joint name="joint_1_s" value="0" />
+        <joint name="joint_2_l" value="0" />
+        <joint name="joint_3_u" value="0" />
+        <joint name="joint_4_r" value="0" />
+        <joint name="joint_5_b" value="0" />
+        <joint name="joint_6_t" value="1.57079" />
+    </group_state>
+    <!-- End Group DP1N2 -->
+
+    <!-- Start Group DN2P4 -->
+    <!-- <group_state name="home" group="DN2P4">
+        <joint name="joint_1_s" value="0" />
+        <joint name="joint_2_l" value="0" />
+        <joint name="joint_3_u" value="0" />
+        <joint name="joint_4_r" value="0" />
+        <joint name="joint_5_b" value="0" />
+        <joint name="joint_6_t" value="0" />
+    </group_state> -->
+    <group_state name="Above_working_space" group="DN2P4">
+	    <joint name="joint_1_s" value="0.610865" />
+        <joint name="joint_2_l" value="0.663225" />
+        <joint name="joint_3_u" value="1.55334" />
+        <joint name="joint_4_r" value="0.0349066" />
+        <joint name="joint_5_b" value="-0.872665" />
+        <joint name="joint_6_t" value="2.19911" />
+    </group_state>
+    <group_state name="On_working_space" group="DN2P4">
+        <joint name="joint_1_s" value="0.593412" />
+        <joint name="joint_2_l" value="0.820305" />
+        <joint name="joint_3_u" value="1.46608" />
+        <joint name="joint_4_r" value="-0.0174533" />
+        <joint name="joint_5_b" value="-0.610865" />
+        <joint name="joint_6_t" value="2.19911" />
+    </group_state>
+    <group_state name="Above_working_space" group="DN2P4">
+        <joint name="joint_1_s" value="0.610865" />
+        <joint name="joint_2_l" value="0.663225" />
+        <joint name="joint_3_u" value="1.55334" />
+        <joint name="joint_4_r" value="0.0349066" />
+        <joint name="joint_5_b" value="-0.872665" />
+        <joint name="joint_6_t" value="2.19911" />
+    </group_state>
+    <group_state name="Middle" group="DN2P4">
+        <joint name="joint_1_s" value="1.5" />
+        <joint name="joint_2_l" value="0.25" />
+        <joint name="joint_3_u" value="2.2" />
+        <joint name="joint_4_r" value="0.0" />
+        <joint name="joint_5_b" value="-1.93" />
+        <joint name="joint_6_t" value="0.78" />
+    </group_state>
+    <group_state name="Above_shuttle" group="DN2P4">
+        <joint name="joint_1_s" value="2.75762" />
+        <joint name="joint_2_l" value="0.541052" />
+        <joint name="joint_3_u" value="2.89725" />
+        <joint name="joint_4_r" value="-0.0523599" />
+        <joint name="joint_5_b" value="-2.35619" />
+        <joint name="joint_6_t" value="0.349066" />
+    </group_state>
+    <group_state name="On_shuttle" group="DN2P4">
+        <joint name="joint_1_s" value="2.75762" />
+        <joint name="joint_2_l" value="0.314159" />
+        <joint name="joint_3_u" value="1.90241" />
+        <joint name="joint_4_r" value="-0.0349066" />
+        <joint name="joint_5_b" value="-1.62316" />
+        <joint name="joint_6_t" value="0.366519" />
+    </group_state>
+    <group_state name="Above_shuttle" group="DN2P4">
+        <joint name="joint_1_s" value="2.75762" />
+        <joint name="joint_2_l" value="0.541052" />
+        <joint name="joint_3_u" value="2.89725" />
+        <joint name="joint_4_r" value="-0.0523599" />
+        <joint name="joint_5_b" value="-2.35619" />
+        <joint name="joint_6_t" value="0.349066" />
+    </group_state>
+    <group_state name="home" group="DN2P4">
+        <joint name="joint_1_s" value="0" />
+        <joint name="joint_2_l" value="0" />
+        <joint name="joint_3_u" value="0" />
+        <joint name="joint_4_r" value="0" />
+        <joint name="joint_5_b" value="0" />
+        <joint name="joint_6_t" value="1.57079" />
+    </group_state>
+    <!-- End Group DN2P4 -->
+
+    <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
+    <end_effector name="hand" parent_link="tool0" group="hand_group"/>
+    <!--VIRTUAL JOINT: Purpose: this element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
+    <virtual_joint name="virtual_joint" type="fixed" parent_frame="virtual" child_link="world"/>
+    <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
+    <disable_collisions link1="adaptater_mors1_link" link2="adaptater_plate_link" reason="Never"/>
+    <disable_collisions link1="adaptater_mors1_link" link2="cylinder_link" reason="Never"/>
+    <disable_collisions link1="adaptater_mors1_link" link2="end_effector_link" reason="Adjacent"/>
+    <disable_collisions link1="adaptater_mors1_link" link2="mors_link1" reason="Adjacent"/>
+    <disable_collisions link1="adaptater_mors1_link" link2="mors_link2" reason="Never"/>
+    <disable_collisions link1="adaptater_mors1_link" link2="link_3_u" reason="Never"/>
+    <disable_collisions link1="adaptater_mors1_link" link2="link_4_r" reason="Never"/>
+    <disable_collisions link1="adaptater_mors1_link" link2="link_5_b" reason="Never"/>
+    <disable_collisions link1="adaptater_mors1_link" link2="link_6_t" reason="Never"/>
+    <disable_collisions link1="adaptater_mors2_link" link2="adaptater_plate_link" reason="Never"/>
+    <disable_collisions link1="adaptater_mors2_link" link2="cylinder_link" reason="Never"/>
+    <disable_collisions link1="adaptater_mors2_link" link2="end_effector_link" reason="Adjacent"/>
+    <disable_collisions link1="adaptater_mors2_link" link2="mors_link1" reason="Never"/>
+    <disable_collisions link1="adaptater_mors2_link" link2="mors_link2" reason="Adjacent"/>
+    <disable_collisions link1="adaptater_mors2_link" link2="link_3_u" reason="Never"/>
+    <disable_collisions link1="adaptater_mors2_link" link2="link_4_r" reason="Never"/>
+    <disable_collisions link1="adaptater_mors2_link" link2="link_5_b" reason="Never"/>
+    <disable_collisions link1="adaptater_mors2_link" link2="link_6_t" reason="Never"/>
+    <disable_collisions link1="adaptater_plate_link" link2="cylinder_link" reason="Adjacent"/>
+    <disable_collisions link1="adaptater_plate_link" link2="end_effector_link" reason="Adjacent"/>
+    <disable_collisions link1="adaptater_plate_link" link2="mors_link1" reason="Never"/>
+    <disable_collisions link1="adaptater_plate_link" link2="mors_link2" reason="Never"/>
+    <disable_collisions link1="adaptater_plate_link" link2="link_3_u" reason="Never"/>
+    <disable_collisions link1="adaptater_plate_link" link2="link_4_r" reason="Never"/>
+    <disable_collisions link1="adaptater_plate_link" link2="link_5_b" reason="Never"/>
+    <disable_collisions link1="adaptater_plate_link" link2="link_6_t" reason="Default"/>
+    <disable_collisions link1="cylinder_link" link2="end_effector_link" reason="Never"/>
+    <disable_collisions link1="cylinder_link" link2="mors_link1" reason="Never"/>
+    <disable_collisions link1="cylinder_link" link2="mors_link2" reason="Never"/>
+    <disable_collisions link1="cylinder_link" link2="link_3_u" reason="Never"/>
+    <disable_collisions link1="cylinder_link" link2="link_4_r" reason="Never"/>
+    <disable_collisions link1="cylinder_link" link2="link_5_b" reason="Never"/>
+    <disable_collisions link1="cylinder_link" link2="link_6_t" reason="Adjacent"/>
+    <disable_collisions link1="end_effector_link" link2="mors_link1" reason="Never"/>
+    <disable_collisions link1="end_effector_link" link2="mors_link2" reason="Never"/>
+    <disable_collisions link1="end_effector_link" link2="link_3_u" reason="Never"/>
+    <disable_collisions link1="end_effector_link" link2="link_4_r" reason="Never"/>
+    <disable_collisions link1="end_effector_link" link2="link_5_b" reason="Never"/>
+    <disable_collisions link1="end_effector_link" link2="link_6_t" reason="Never"/>
+    <disable_collisions link1="ergots1_link" link2="ergots2_link" reason="Never"/>
+    <disable_collisions link1="ergots1_link" link2="pieds_cellule_link" reason="Adjacent"/>
+    <disable_collisions link1="ergots1_link" link2="rail_milieu_link" reason="Never"/>
+    <disable_collisions link1="ergots1_link" link2="rail_tournant1_link" reason="Never"/>
+    <disable_collisions link1="ergots1_link" link2="rail_tournant2_link" reason="Never"/>
+    <disable_collisions link1="ergots1_link" link2="table_link" reason="Never"/>
+    <disable_collisions link1="ergots1_link" link2="base_link" reason="Never"/>
+    <disable_collisions link1="ergots1_link" link2="link_1_s" reason="Never"/>
+    <disable_collisions link1="ergots2_link" link2="pieds_cellule_link" reason="Adjacent"/>
+    <disable_collisions link1="ergots2_link" link2="rail_milieu_link" reason="Never"/>
+    <disable_collisions link1="ergots2_link" link2="rail_tournant1_link" reason="Never"/>
+    <disable_collisions link1="ergots2_link" link2="rail_tournant2_link" reason="Never"/>
+    <disable_collisions link1="ergots2_link" link2="table_link" reason="Never"/>
+    <disable_collisions link1="ergots2_link" link2="base_link" reason="Never"/>
+    <disable_collisions link1="ergots2_link" link2="link_1_s" reason="Never"/>
+    <disable_collisions link1="mors_link1" link2="mors_link2" reason="Never"/>
+    <disable_collisions link1="mors_link1" link2="link_3_u" reason="Never"/>
+    <disable_collisions link1="mors_link1" link2="link_4_r" reason="Never"/>
+    <disable_collisions link1="mors_link1" link2="link_5_b" reason="Never"/>
+    <disable_collisions link1="mors_link1" link2="link_6_t" reason="Never"/>
+    <disable_collisions link1="mors_link2" link2="rail_tournant2_link" reason="Never"/>
+    <disable_collisions link1="mors_link2" link2="link_3_u" reason="Never"/>
+    <disable_collisions link1="mors_link2" link2="link_4_r" reason="Never"/>
+    <disable_collisions link1="mors_link2" link2="link_5_b" reason="Never"/>
+    <disable_collisions link1="mors_link2" link2="link_6_t" reason="Never"/>
+    <disable_collisions link1="pieds_cellule_link" link2="rail_milieu_link" reason="Adjacent"/>
+    <disable_collisions link1="pieds_cellule_link" link2="rail_tournant1_link" reason="Never"/>
+    <disable_collisions link1="pieds_cellule_link" link2="rail_tournant2_link" reason="Never"/>
+    <disable_collisions link1="pieds_cellule_link" link2="table_link" reason="Adjacent"/>
+    <disable_collisions link1="pieds_cellule_link" link2="base_link" reason="Never"/>
+    <disable_collisions link1="pieds_cellule_link" link2="link_1_s" reason="Never"/>
+    <disable_collisions link1="rail_milieu_link" link2="rail_tournant1_link" reason="Adjacent"/>
+    <disable_collisions link1="rail_milieu_link" link2="rail_tournant2_link" reason="Adjacent"/>
+    <disable_collisions link1="rail_milieu_link" link2="table_link" reason="Never"/>
+    <disable_collisions link1="rail_milieu_link" link2="base_link" reason="Never"/>
+    <disable_collisions link1="rail_milieu_link" link2="link_1_s" reason="Never"/>
+    <disable_collisions link1="rail_tournant1_link" link2="rail_tournant2_link" reason="Never"/>
+    <disable_collisions link1="rail_tournant1_link" link2="table_link" reason="Never"/>
+    <disable_collisions link1="rail_tournant1_link" link2="base_link" reason="Never"/>
+    <disable_collisions link1="rail_tournant1_link" link2="link_1_s" reason="Never"/>
+    <disable_collisions link1="rail_tournant2_link" link2="table_link" reason="Never"/>
+    <disable_collisions link1="rail_tournant2_link" link2="base_link" reason="Never"/>
+    <disable_collisions link1="rail_tournant2_link" link2="link_1_s" reason="Never"/>
+    <disable_collisions link1="rail_tournant2_link" link2="link_2_l" reason="Never"/>
+    <disable_collisions link1="rail_tournant2_link" link2="link_3_u" reason="Never"/>
+    <disable_collisions link1="table_link" link2="base_link" reason="Adjacent"/>
+    <disable_collisions link1="table_link" link2="link_1_s" reason="Never"/>
+    <disable_collisions link1="base_link" link2="link_1_s" reason="Adjacent"/>
+    <disable_collisions link1="base_link" link2="link_3_u" reason="Never"/>
+    <disable_collisions link1="link_1_s" link2="link_2_l" reason="Adjacent"/>
+    <disable_collisions link1="link_1_s" link2="link_3_u" reason="Never"/>
+    <disable_collisions link1="link_2_l" link2="link_3_u" reason="Adjacent"/>
+    <disable_collisions link1="link_2_l" link2="link_4_r" reason="Never"/>
+    <disable_collisions link1="link_3_u" link2="link_4_r" reason="Adjacent"/>
+    <disable_collisions link1="link_3_u" link2="link_5_b" reason="Never"/>
+    <disable_collisions link1="link_3_u" link2="link_6_t" reason="Never"/>
+    <disable_collisions link1="link_4_r" link2="link_5_b" reason="Adjacent"/>
+    <disable_collisions link1="link_4_r" link2="link_6_t" reason="Never"/>
+    <disable_collisions link1="link_5_b" link2="link_6_t" reason="Adjacent"/>
+</robot>

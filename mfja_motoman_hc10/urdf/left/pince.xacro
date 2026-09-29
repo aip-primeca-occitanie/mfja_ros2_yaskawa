@@ -1,0 +1,79 @@
+<?xml version="1.0" ?>
+
+<robot name="hand" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <!-- Ajout des différentes pièces de la pinces / couleurs définies dans le fichier materials.xacro-->
+    <link name="adaptater_plate_link">
+      <visual>
+        <geometry>
+          <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/left/LWR50F-17-04-A.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="dark_gray"/>
+      </visual>
+      <collision>
+        <geometry>
+          <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/left/LWR50F-17-04-A.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>  
+    <link name="end_effector_link">
+      <visual>
+        <geometry>
+          <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/left/end_effector_LWR50L-03-00001-A.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+        <material name="white_smoke"/>
+      </visual>
+      <collision>
+        <geometry>
+          <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/left/end_effector_LWR50L-03-00001-A.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+    </link>  
+    <link name="mors_link1">
+        <visual>
+          <geometry>
+            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/left/mors_for_LWR50L-03-00001-A.stl" scale="0.001 0.001 0.001"/>
+          </geometry>
+          <material name="silver"/>
+        </visual>
+        <collision>
+          <geometry>
+            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/left/mors_for_LWR50L-03-00001-A.stl" scale="0.001 0.001 0.001"/>
+          </geometry>
+        </collision>
+      </link>
+      <link name="mors_link2">
+        <visual>
+          <geometry>
+            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/left/mors_for_LWR50L-03-00001-A.stl" scale="0.001 0.001 0.001"/>
+          </geometry>
+          <material name="silver"/>
+        </visual>
+        <collision>
+          <geometry>
+            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/left/mors_for_LWR50L-03-00001-A.stl" scale="0.001 0.001 0.001"/>
+          </geometry>
+        </collision>
+      </link>
+      <!-- Création des joints  -->
+      <joint name="adapatater_plate_end_effector" type="fixed" >
+        <origin rpy="0 1.57079 0" xyz="0 -0.039 0" />
+        <parent link="adaptater_plate_link" />
+        <child link="end_effector_link" />
+      </joint>
+      <!-- ce joint doit être de type prismatique -->
+      <joint name="end_effector_adaptater_mors1" type="prismatic" >
+        <origin rpy="0 0 0" xyz="0 0 0" />
+        <parent link="end_effector_link" />
+        <child link="mors_link1" />
+        <axis xyz="0 0 1"/>
+        <limit effort="1000.0" lower="-0.0108" upper="0" velocity="0.5"/>
+      </joint>
+      <!-- ce joint doit être de type prismatique -->
+      <joint name="end_effector_adaptater_mors2" type="prismatic" >
+        <origin rpy="0 3.14 0" xyz="0 0 0" />
+        <parent link="end_effector_link" />
+        <child link="mors_link2" />
+        <axis xyz="0 0 1"/>
+        <limit effort="1000.0" lower="-0.0108" upper="0" velocity="0.5"/>
+      </joint>
+</robot>

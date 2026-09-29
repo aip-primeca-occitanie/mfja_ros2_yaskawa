@@ -1,0 +1,120 @@
+<?xml version="1.0" ?>
+<robot name="env" xmlns:xacro="http://www.ros.org/wiki/xacro" >
+
+  <link name="pieds_cellule_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://motoman_hc10_moveit_config/meshes/env/pieds_cellule.stl" scale="1 1 1"/>
+      </geometry>
+      <material name="silver"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://motoman_hc10_moveit_config/meshes/env/pieds_cellule.stl" scale="1 1 1"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="ergots1_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://motoman_hc10_moveit_config/meshes/env/ergots.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="dark_gray"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://motoman_hc10_moveit_config/meshes/env/ergots.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="ergots2_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://motoman_hc10_moveit_config/meshes/env/ergots.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="dark_gray"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://motoman_hc10_moveit_config/meshes/env/ergots.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="rail_milieu_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://motoman_hc10_moveit_config/meshes/env/rail_milieu.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="silver"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://motoman_hc10_moveit_config/meshes/env/rail_milieu.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="rail_tournant1_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://motoman_hc10_moveit_config/meshes/env/rail_tournant.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="silver"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://motoman_hc10_moveit_config/meshes/env/rail_tournant.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="rail_tournant2_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://motoman_hc10_moveit_config/meshes/env/rail_tournant.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="silver"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://motoman_hc10_moveit_config/meshes/env/rail_tournant.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="pieds_cellule_ergots1" type="fixed" >
+    <origin rpy="0 0 0" xyz="0.111 0.025 0.485" />
+    <parent link="pieds_cellule_link" />
+    <child link="ergots1_link" />
+  </joint>
+  <joint name="pieds_cellule_ergots2" type="fixed" >
+    <origin rpy="0 0 0" xyz="-0.29 0.025 0.485" />
+    <parent link="pieds_cellule_link" />
+    <child link="ergots2_link" />
+  </joint>
+  <joint name="pieds_cellule_rail_milieu" type="fixed" >
+    <origin rpy="0 0 0" xyz="-0.02 0 0.403" />
+    <parent link="pieds_cellule_link" />
+    <child link="rail_milieu_link" />
+  </joint>
+  <joint name="rail_milieu_rail_tournant1" type="fixed" >
+    <origin rpy="-1.57079 3.14 1.57079" xyz="0.69 0.09 0.003" />
+    <parent link="rail_milieu_link" />
+    <child link="rail_tournant1_link" />
+  </joint>
+  <joint name="rail_milieu_rail_tournant2" type="fixed" >
+    <origin rpy="-1.57079 3.14 0" xyz="-0.651 0.09 0.003" />
+    <parent link="rail_milieu_link" />
+    <child link="rail_tournant2_link" />
+  </joint>
+</robot>
