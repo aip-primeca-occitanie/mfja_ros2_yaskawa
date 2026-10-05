@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 
-<robot name="yaskawa_R" xmlns:xacro="http://www.ros.org/wiki/xacro" >
+<robot name="yaskawa_RIGHT" xmlns:xacro="http://www.ros.org/wiki/xacro" >
 
     <!-- loading urdf -->
     <xacro:include filename="$(find mfja_motoman_hc10)/urdf/materials.xacro" />
@@ -9,7 +9,7 @@
     <xacro:include filename="$(find mfja_motoman_hc10)/urdf/right/pince.xacro" />
 
     <xacro:include filename="$(find motoman_hc10_support)/urdf/hc10_macro.xacro" />
-    <xacro:motoman_hc10 prefix=""/>
+    <xacro:motoman_hc10 prefix="yaskawa_RIGHT_"/>
 
     <!-- linking robot to world,workspaces and end-effector -->
     <link name="world" />

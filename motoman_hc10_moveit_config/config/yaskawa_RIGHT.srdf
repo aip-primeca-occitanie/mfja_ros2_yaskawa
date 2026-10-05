@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--This does not replace URDF, and is not an extension of URDF.
+    This is a format for representing semantic information about the robot structure.
+    A URDF file must exist for this robot as well, where the joints and the links that are referenced are defined
+-->
+<robot name="yaskawa_RIGHT">
+    <!--GROUPS: Representation of a set of joints and links. This can be useful for specifying DOF to plan for, defining arms, end effectors, etc-->
+    <!--LINKS: When a link is specified, the parent joint of that link (if it exists) is automatically included-->
+    <!--JOINTS: When a joint is specified, the child link of that joint (which will always exist) is automatically included-->
+    <!--CHAINS: When a chain is specified, all the links along the chain (including endpoints) are included in the group. Additionally, all the joints that are parents to included links are also included. This means that joints along the chain and the parent joint of the base link are included in the group-->
+    <!--SUBGROUPS: Groups can also be formed by referencing to already defined group names-->
+    <group name="DN2P1">
+        <chain base_link="base_link" tip_link="tool0"/>
+    </group>
+    <group name="DP1N2">
+        <chain base_link="base_link" tip_link="tool0"/>
+    </group>
+    <group name="DN2P4">
+        <chain base_link="base_link" tip_link="tool0"/>
+    </group>
+    <group name="DP1N3">
+        <chain base_link="base_link" tip_link="tool0"/>
+    </group>
+    <group name="hand_group">
+        <link name="adaptater_plate_link"/>
+        <link name="end_effector_link"/>
+        <link name="mors_link1"/>
+        <link name="mors_link2"/>
+    </group>
+    <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
+    <end_effector name="hand" parent_link="tool0" group="hand_group"/>
+    <!--VIRTUAL JOINT: Purpose: this element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
+    <virtual_joint name="virtual_joint" type="fixed" parent_frame="virtual" child_link="world"/>
+    <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
+    <disable_collisions link1="adaptater_plate_link" link2="end_effector_link" reason="Adjacent"/>
+    <disable_collisions link1="adaptater_plate_link" link2="link_3" reason="Never"/>
+    <disable_collisions link1="adaptater_plate_link" link2="link_4" reason="Never"/>
+    <disable_collisions link1="adaptater_plate_link" link2="link_5" reason="Never"/>
+    <disable_collisions link1="adaptater_plate_link" link2="link_6" reason="Adjacent"/>
+    <disable_collisions link1="adaptater_plate_link" link2="mors_link1" reason="Never"/>
+    <disable_collisions link1="adaptater_plate_link" link2="mors_link2" reason="Never"/>
+    <disable_collisions link1="base_link" link2="ergots1_link" reason="Never"/>
+    <disable_collisions link1="base_link" link2="ergots2_link" reason="Never"/>
+    <disable_collisions link1="base_link" link2="link_1" reason="Adjacent"/>
+    <disable_collisions link1="base_link" link2="link_3" reason="Never"/>
+    <disable_collisions link1="base_link" link2="pieds_cellule_link" reason="Never"/>
+    <disable_collisions link1="base_link" link2="rail_milieu_link" reason="Never"/>
+    <disable_collisions link1="base_link" link2="rail_tournant1_link" reason="Never"/>
+    <disable_collisions link1="base_link" link2="rail_tournant2_link" reason="Never"/>
+    <disable_collisions link1="base_link" link2="table_link" reason="Adjacent"/>
+    <disable_collisions link1="end_effector_link" link2="link_3" reason="Never"/>
+    <disable_collisions link1="end_effector_link" link2="link_4" reason="Never"/>
+    <disable_collisions link1="end_effector_link" link2="link_5" reason="Never"/>
+    <disable_collisions link1="end_effector_link" link2="link_6" reason="Never"/>
+    <disable_collisions link1="end_effector_link" link2="mors_link1" reason="Adjacent"/>
+    <disable_collisions link1="end_effector_link" link2="mors_link2" reason="Adjacent"/>
+    <disable_collisions link1="ergots1_link" link2="ergots2_link" reason="Never"/>
+    <disable_collisions link1="ergots1_link" link2="link_1" reason="Never"/>
+    <disable_collisions link1="ergots1_link" link2="pieds_cellule_link" reason="Adjacent"/>
+    <disable_collisions link1="ergots1_link" link2="rail_milieu_link" reason="Never"/>
+    <disable_collisions link1="ergots1_link" link2="rail_tournant1_link" reason="Never"/>
+    <disable_collisions link1="ergots1_link" link2="rail_tournant2_link" reason="Never"/>
+    <disable_collisions link1="ergots1_link" link2="table_link" reason="Never"/>
+    <disable_collisions link1="ergots2_link" link2="link_1" reason="Never"/>
+    <disable_collisions link1="ergots2_link" link2="pieds_cellule_link" reason="Adjacent"/>
+    <disable_collisions link1="ergots2_link" link2="rail_milieu_link" reason="Never"/>
+    <disable_collisions link1="ergots2_link" link2="rail_tournant1_link" reason="Never"/>
+    <disable_collisions link1="ergots2_link" link2="rail_tournant2_link" reason="Never"/>
+    <disable_collisions link1="ergots2_link" link2="table_link" reason="Never"/>
+    <disable_collisions link1="link_1" link2="link_2" reason="Adjacent"/>
+    <disable_collisions link1="link_1" link2="link_3" reason="Never"/>
+    <disable_collisions link1="link_1" link2="pieds_cellule_link" reason="Never"/>
+    <disable_collisions link1="link_1" link2="rail_milieu_link" reason="Never"/>
+    <disable_collisions link1="link_1" link2="rail_tournant1_link" reason="Never"/>
+    <disable_collisions link1="link_1" link2="rail_tournant2_link" reason="Never"/>
+    <disable_collisions link1="link_1" link2="table_link" reason="Never"/>
+    <disable_collisions link1="link_2" link2="link_3" reason="Adjacent"/>
+    <disable_collisions link1="link_2" link2="link_4" reason="Never"/>
+    <disable_collisions link1="link_2" link2="rail_tournant2_link" reason="Never"/>
+    <disable_collisions link1="link_3" link2="link_4" reason="Adjacent"/>
+    <disable_collisions link1="link_3" link2="link_5" reason="Never"/>
+    <disable_collisions link1="link_3" link2="link_6" reason="Never"/>
+    <disable_collisions link1="link_3" link2="mors_link1" reason="Never"/>
+    <disable_collisions link1="link_3" link2="mors_link2" reason="Never"/>
+    <disable_collisions link1="link_3" link2="rail_tournant2_link" reason="Never"/>
+    <disable_collisions link1="link_4" link2="link_5" reason="Adjacent"/>
+    <disable_collisions link1="link_4" link2="link_6" reason="Never"/>
+    <disable_collisions link1="link_4" link2="mors_link1" reason="Never"/>
+    <disable_collisions link1="link_4" link2="mors_link2" reason="Never"/>
+    <disable_collisions link1="link_5" link2="link_6" reason="Adjacent"/>
+    <disable_collisions link1="link_5" link2="mors_link1" reason="Never"/>
+    <disable_collisions link1="link_5" link2="mors_link2" reason="Never"/>
+    <disable_collisions link1="link_6" link2="mors_link1" reason="Never"/>
+    <disable_collisions link1="link_6" link2="mors_link2" reason="Never"/>
+    <disable_collisions link1="mors_link1" link2="mors_link2" reason="Default"/>
+    <disable_collisions link1="mors_link1" link2="rail_tournant2_link" reason="Never"/>
+    <disable_collisions link1="pieds_cellule_link" link2="rail_milieu_link" reason="Adjacent"/>
+    <disable_collisions link1="pieds_cellule_link" link2="rail_tournant1_link" reason="Never"/>
+    <disable_collisions link1="pieds_cellule_link" link2="rail_tournant2_link" reason="Never"/>
+    <disable_collisions link1="pieds_cellule_link" link2="table_link" reason="Adjacent"/>
+    <disable_collisions link1="rail_milieu_link" link2="rail_tournant1_link" reason="Adjacent"/>
+    <disable_collisions link1="rail_milieu_link" link2="rail_tournant2_link" reason="Adjacent"/>
+    <disable_collisions link1="rail_milieu_link" link2="table_link" reason="Never"/>
+    <disable_collisions link1="rail_tournant1_link" link2="rail_tournant2_link" reason="Never"/>
+    <disable_collisions link1="rail_tournant1_link" link2="table_link" reason="Never"/>
+    <disable_collisions link1="rail_tournant2_link" link2="table_link" reason="Never"/>
+</robot>

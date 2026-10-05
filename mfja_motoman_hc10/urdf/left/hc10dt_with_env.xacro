@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 
-<robot name="yaskawa_L" xmlns:xacro="http://www.ros.org/wiki/xacro" >
+<robot name="yaskawa_LEFT" xmlns:xacro="http://www.ros.org/wiki/xacro" >
 
     <!-- loading urdf -->
     <xacro:include filename="$(find mfja_motoman_hc10)/urdf/materials.xacro" />

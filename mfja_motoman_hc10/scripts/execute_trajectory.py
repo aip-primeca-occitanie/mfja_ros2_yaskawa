@@ -1,138 +1,153 @@
-#! /usr/bin/env python
-from os import wait
+#!/usr/bin/env python3
+
 import sys
-import argparse
-import rclpy
-from rclpy.duration import Duration
-# import moveit_commander
-from moveit_py.planning import MoveItPy
-import moveit_msgs.msg
 import csv
+import argparse
+import time
+
+import rclpy
+from rclpy.node import Node
+from rclpy.duration import Duration
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+from moveit_msgs.msg import DisplayTrajectory
+
+# In ROS 2, moveit_commander is deprecated.
+# If you use moveit_py, it is configured via the Node / MoveItPy API:
+# from moveit.planning import MoveItPy
 
 
-class TrajectoryExecutor():
-    def __init__(self, argv):
-        self.current_joint_position = [0,0,0,0,0,0]
-        moveit_commander.roscpp_initialize(argv)
+class TrajectoryExecutor(Node):
+    def __init__(self):
+        super().__init__('execute_trajectory')
 
-        rclpy.init(args=sys.argv)
-        self.node = rclpy.create_node('execute_trajectory')
-        
-        sub = self.node.create_subscription(JointState, 'joint_states', self.callback)
-
-        self.pub = self.node.create_publisher(JointTrajectory, 'joint_path_command', queue_size=10)
-
-        self.robot = moveit_commander.RobotCommander()
-        self.scene = moveit_commander.PlanningSceneInterface()
-        self.group = moveit_commander.MoveGroupCommander("DN2P1") # "manipulator"
-
-        self.pub = self.node.create_publisher(
-            moveit_msgs.msg.DisplayTrajectory,
-            '/move_group/display_planned_path',
-            queue_size=20
-        )
-
+        self.current_joint_position = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.joint_names = [
-            "joint_1_s",
-            "joint_2_l",
-            "joint_3_u",
-            "joint_4_r",
-            "joint_5_b",
-            "joint_6_t"
+            "joint_1",
+            "joint_2",
+            "joint_3",
+            "joint_4",
+            "joint_5",
+            "joint_6"
         ]
 
-    def callback(self, data):
-        """Update the current joint position."""
-        
-        self.node.get_logger().info(self.get_name() + "I heard %s", data.position)
-        self.current_joint_position = data.position
+        # ROS 2 Subscription
+        self.subscription = self.create_subscription(
+            JointState,
+            'joint_states',
+            self.joint_state_callback,
+            10
+        )
 
-    def is_current_init(self, initial_position):
-        for i in range(len(initial_position)):
-            if ((initial_position[i]-self.current_joint_position[i])>0.01):
+        # Publishers
+        self.pub_trajectory = self.create_publisher(
+            JointTrajectory,
+            'joint_path_command',
+            10
+        )
+
+        self.pub_display = self.create_publisher(
+            DisplayTrajectory,
+            '/move_group/display_planned_path',
+            20
+        )
+
+        self.get_logger().info("TrajectoryExecutor Node Initialized")
+
+    def joint_state_callback(self, msg: JointState):
+        """Update current joint position based on subscribed joint names."""
+        # Map values according to expected joint_names order if available
+        if msg.position:
+            self.current_joint_position = list(msg.position)
+            self.get_logger().debug(f"Received joint positions: {self.current_joint_position}")
+
+    def is_current_init(self, initial_position, threshold: float = 0.01) -> bool:
+        """Check if robot is within threshold distance of initial position."""
+        for curr, init in zip(self.current_joint_position, initial_position):
+            if abs(init - curr) > threshold:
                 return False
         return True
-    
-    def read_trajectory(self, filename: str, Ts: float = 0.1) -> JointTrajectory: # 0.05 didn't work
-        """Read a trajectory file and return a JointTrajectory."""
-        print("Reading trajectory : ", filename)
-        # create a new trajectory
+
+    def read_trajectory(self, filename: str, Ts: float = 0.1) -> JointTrajectory:
+        """Read CSV trajectory file and output a JointTrajectory message."""
+        self.get_logger().info(f"Reading trajectory from: {filename}")
+        
         trajectory = JointTrajectory()
         trajectory.joint_names = self.joint_names
-        # read the points in the file and add them to the JointTrajectory
-        with open(filename) as csv_file:
+
+        with open(filename, 'r') as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
-            line_count = 1
-            # Skip first line (header)
+            # Skip header
             next(csv_reader, None)
+
+            line_count = 1
             for row in csv_reader:
                 point = JointTrajectoryPoint()
-                point.positions = list(map(float,row))
-                point.velocities = [0,0,0,0,0,0]
-                point.time_from_start = Duration(Ts*line_count)
+                point.positions = list(map(float, row))
+                point.velocities = [0.0] * len(self.joint_names)
+                
+                # Convert time duration float to rclpy Duration -> msg
+                time_offset = Duration(seconds=Ts * line_count)
+                point.time_from_start = time_offset.to_msg()
+
                 trajectory.points.append(point)
                 line_count += 1
+
         return trajectory
 
-    def execute_trajectory(self, filename: str = None):
-        """Read a trajectory file and execute it."""
-
+    def execute_trajectory(self, filename: str):
+        """Read trajectory, prepend current position, and publish."""
         trajectory = self.read_trajectory(filename)
 
-        # compare initial position to current position
-        initial_position = trajectory.points[0].positions
-        init_ok = self.is_current_init(initial_position) # is the first point of the trajectory (almost) equal tu current point?
-        print ("Initial position : ", initial_position)
+        if not trajectory.points:
+            self.get_logger().error("Trajectory file is empty or invalid!")
+            return
 
-        # if necessary, move to initial position
-        if (init_ok == False):
-            print("First, going to initial position via moveit")
-            self.group.set_joint_value_target(initial_position)
-            self.group.go(wait=True) #Blocking call, same as "group.move()" for roscpp
-            self.group.stop()
-            rospy.sleep(3)
-        
-        # adding current position at the start of the trajectory
+        initial_position = trajectory.points[0].positions
+        self.get_logger().info(f"Target initial position: {initial_position}")
+
+        init_ok = self.is_current_init(initial_position)
+        if not init_ok:
+            self.get_logger().warn("Current state does not match trajectory start position.")
+            # Note: For automated planning to start position in ROS 2, 
+            # use a MoveGroupAction client or MoveItPy interface here.
+
+        # Prepend current position at t = 0
         point_current = JointTrajectoryPoint()
         point_current.positions = list(self.current_joint_position)
-        point_current.velocities = [0,0,0,0,0,0]
-        point_current.time_from_start = Duration(0)
+        point_current.velocities = [0.0] * len(self.joint_names)
+        point_current.time_from_start = Duration(seconds=0).to_msg()
         trajectory.points.insert(0, point_current)
 
-        # populate header
-        trajectory.header.stamp = self.get_clock().now()
-        trajectory.header.seq = 1
+        # Header setup (Note: seq was removed in ROS 2 Header)
+        trajectory.header.stamp = self.get_clock().now().to_msg()
+        trajectory.header.frame_id = "base_link"
 
-        # publish trajectory to execute the movement
-        self.pub.publish(trajectory)
-        print (trajectory)
+        # Publish
+        self.pub_trajectory.publish(trajectory)
+        self.get_logger().info("Successfully published JointTrajectory command.")
 
-    # def plan_and_execute(self, filename: str = None):
-    #     """NOT TESTED! Planning and executing with set_joint_value_target."""
-    #     if filename is None:
-    #         filename = '/home/yaska/catkin_ws/src/ros_yaskawa_hc10/motoman_hc10_moveit_config/trajectories/trajectory.csv'
 
-    #     trajectory = self.read_trajectory(filename)
-    #     for n in range(len(trajectory)):
-    #         if not rospy.is_shutdown():
-    #             self.group.set_joint_value_target(trajectory[n])
-    #             print("New target has been set")
-    #             #plan2 = group.plan()
-    #             print("Plannig done, now executing \n")
-    #             self.group.go(wait=True) #Blocking call, same as "group.move()" for roscpp
-    #             self.group.stop()
-    #     moveit_commander.roscpp_shutdown()
+def main(args=None):
+    parser = argparse.ArgumentParser(description="ROS 2 Trajectory Executor")
+    parser.add_argument("filename", help="Path to CSV trajectory file")
+    known_args, remaining_args = parser.parse_known_args()
+
+    rclpy.init(args=remaining_args)
+
+    executor_node = TrajectoryExecutor()
+
+    # Spin briefly to allow state callbacks to receive current joint positions
+    start_time = time.time()
+    while time.time() - start_time < 1.0:
+        rclpy.spin_once(executor_node, timeout_sec=0.1)
+
+    executor_node.execute_trajectory(filename=known_args.filename)
+
+    # Clean shutdown
+    executor_node.destroy_node()
+    rclpy.shutdown()
 
 
 if __name__ == "__main__":
-
-    # parse command line arguments to get path file
-    parser = argparse.ArgumentParser()
-    parser.add_argument("filename")
-    known_args, remaining_args = parser.parse_known_args()
-
-    trajExecutor = TrajectoryExecutor(remaining_args)
-    print("path", known_args.filename)
-    trajExecutor.execute_trajectory(filename=known_args.filename)
+    main()

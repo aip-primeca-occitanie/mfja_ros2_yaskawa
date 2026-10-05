@@ -3,8 +3,23 @@ moveit_setup_assistant_config:
     package: mfja_motoman_hc10
     relative_path: urdf/left/hc10dt_with_env.xacro
   srdf:
-    relative_path: config/yaskawa_L.srdf
+    relative_path: config/yaskawa_LEFT.srdf
   package_settings:
-    author_name: ""
-    author_email: ""
-    generated_timestamp: 1791187029
+    author_name: Diane Bury
+    author_email: diane.bury@utoulouse.fr
+    generated_timestamp: 1791208477
+  control_xacro:
+    command:
+      - position
+    state:
+      - position
+      - velocity
+  modified_urdf:
+    xacros:
+      - control_xacro
+  control_xacro:
+    command:
+      - position
+    state:
+      - position
+      - velocity

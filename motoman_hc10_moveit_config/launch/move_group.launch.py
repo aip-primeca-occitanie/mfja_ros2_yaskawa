@@ -3,5 +3,5 @@ from moveit_configs_utils.launches import generate_move_group_launch
 
 
 def generate_launch_description():
-    moveit_config = MoveItConfigsBuilder("yaskawa_L", package_name="motoman_hc10_moveit_config").to_moveit_configs()
+    moveit_config = MoveItConfigsBuilder("yaskawa_LEFT", package_name="motoman_hc10_moveit_config").to_moveit_configs()
     return generate_move_group_launch(moveit_config)

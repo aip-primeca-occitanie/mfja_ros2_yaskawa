@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="yaskawa_LEFT">
+    <xacro:arg name="initial_positions_file" default="initial_positions.yaml" />
+
+    <!-- Import yaskawa_LEFT urdf file -->
+    <xacro:include filename="$(find mfja_motoman_hc10)/urdf/left/hc10dt_with_env.xacro" />
+
+    <!-- Import control_xacro -->
+    <xacro:include filename="yaskawa_LEFT.ros2_control.xacro" />
+
+
+    <xacro:yaskawa_LEFT_ros2_control name="FakeSystem" initial_positions_file="$(arg initial_positions_file)"/>
+
+</robot>
