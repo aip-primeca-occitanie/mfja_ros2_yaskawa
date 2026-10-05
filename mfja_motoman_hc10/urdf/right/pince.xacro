@@ -5,91 +5,91 @@
     <link name="cylinder_link">
       <visual>
         <geometry>
-          <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/cylinder.stl" scale="1 1 1"/>
+          <mesh filename="package://mfja_motoman_hc10/meshes/hand/right/cylinder.stl" scale="1 1 1"/>
         </geometry>
         <material name="white_smoke"/>
       </visual>
       <collision>
         <geometry>
-          <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/cylinder.stl" scale="1 1 1"/>
+          <mesh filename="package://mfja_motoman_hc10/meshes/hand/right/cylinder.stl" scale="1 1 1"/>
         </geometry>
       </collision>
     </link>  
     <link name="end_effector_link">
         <visual>
           <geometry>
-            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/GEH6040IL-03-B(01).stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://mfja_motoman_hc10/meshes/hand/right/GEH6040IL-03-B(01).stl" scale="0.001 0.001 0.001"/>
           </geometry>
           <material name="dark_gray"/>
         </visual>
         <collision>
           <geometry>
-            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/GEH6040IL-03-B(01).stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://mfja_motoman_hc10/meshes/hand/right/GEH6040IL-03-B(01).stl" scale="0.001 0.001 0.001"/>
           </geometry>
         </collision>
       </link>
       <link name="mors_link1">
         <visual>
           <geometry>
-            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/UB5006AL.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://mfja_motoman_hc10/meshes/hand/right/UB5006AL.stl" scale="0.001 0.001 0.001"/>
           </geometry>
           <material name="silver"/>
         </visual>
         <collision>
           <geometry>
-            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/UB5006AL.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://mfja_motoman_hc10/meshes/hand/right/UB5006AL.stl" scale="0.001 0.001 0.001"/>
           </geometry>
         </collision>
       </link>
       <link name="mors_link2">
         <visual>
           <geometry>
-            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/UB5006AL.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://mfja_motoman_hc10/meshes/hand/right/UB5006AL.stl" scale="0.001 0.001 0.001"/>
           </geometry>
           <material name="silver"/>
         </visual>
         <collision>
           <geometry>
-            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/UB5006AL.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://mfja_motoman_hc10/meshes/hand/right/UB5006AL.stl" scale="0.001 0.001 0.001"/>
           </geometry>
         </collision>
       </link>
       <link name="adaptater_plate_link">
         <visual>
           <geometry>
-            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/APR000009.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://mfja_motoman_hc10/meshes/hand/right/APR000009.stl" scale="0.001 0.001 0.001"/>
           </geometry>
           <material name="dark_gray"/>
         </visual>
         <collision>
           <geometry>
-            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/APR000009.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://mfja_motoman_hc10/meshes/hand/right/APR000009.stl" scale="0.001 0.001 0.001"/>
           </geometry>
         </collision>
       </link>
       <link name="adaptater_mors1_link">
         <visual>
           <geometry>
-            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/APGEH6000.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://mfja_motoman_hc10/meshes/hand/right/APGEH6000.stl" scale="0.001 0.001 0.001"/>
           </geometry>
           <material name="dark_gray"/>
         </visual>
         <collision>
           <geometry>
-            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/APGEH6000.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://mfja_motoman_hc10/meshes/hand/right/APGEH6000.stl" scale="0.001 0.001 0.001"/>
           </geometry>
         </collision>
       </link>
       <link name="adaptater_mors2_link">
         <visual>
           <geometry>
-            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/APGEH6000.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://mfja_motoman_hc10/meshes/hand/right/APGEH6000.stl" scale="0.001 0.001 0.001"/>
           </geometry>
           <material name="dark_gray"/>
         </visual>
         <collision>
           <geometry>
-            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/right/APGEH6000.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://mfja_motoman_hc10/meshes/hand/right/APGEH6000.stl" scale="0.001 0.001 0.001"/>
           </geometry>
         </collision>
       </link>

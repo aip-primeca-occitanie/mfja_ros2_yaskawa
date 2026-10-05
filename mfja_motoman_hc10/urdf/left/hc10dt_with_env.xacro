@@ -3,12 +3,12 @@
 <robot name="yaskawa_L" xmlns:xacro="http://www.ros.org/wiki/xacro" >
 
     <!-- loading urdf -->
-    <xacro:include filename="$(find motoman_hc10_moveit_config)/urdf/materials.xacro" />
-    <xacro:include filename="$(find motoman_hc10_moveit_config)/urdf/table.xacro" />
-    <xacro:include filename="$(find motoman_hc10_moveit_config)/urdf/left/cell.xacro" />
-    <xacro:include filename="$(find motoman_hc10_moveit_config)/urdf/left/pince.xacro" />
+    <xacro:include filename="$(find mfja_motoman_hc10)/urdf/materials.xacro" />
+    <xacro:include filename="$(find mfja_motoman_hc10)/urdf/table.xacro" />
+    <xacro:include filename="$(find mfja_motoman_hc10)/urdf/left/cell.xacro" />
+    <xacro:include filename="$(find mfja_motoman_hc10)/urdf/left/pince.xacro" />
 
-    <xacro:include filename="$(find motoman_hc10_moveit_config)/urdf/hc10dt_b10_macro.xacro" />
+    <xacro:include filename="$(find motoman_hc10_support)/urdf/hc10dt_b10_macro.xacro" />
     <xacro:motoman_hc10dt_b10 prefix=""/>
 
     <!-- linking robot to world,workspaces and end-effector -->

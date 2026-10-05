@@ -5,52 +5,52 @@
     <link name="adaptater_plate_link">
       <visual>
         <geometry>
-          <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/left/LWR50F-17-04-A.stl" scale="0.001 0.001 0.001"/>
+          <mesh filename="package://mfja_motoman_hc10/meshes/hand/left/LWR50F-17-04-A.stl" scale="0.001 0.001 0.001"/>
         </geometry>
         <material name="dark_gray"/>
       </visual>
       <collision>
         <geometry>
-          <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/left/LWR50F-17-04-A.stl" scale="0.001 0.001 0.001"/>
+          <mesh filename="package://mfja_motoman_hc10/meshes/hand/left/LWR50F-17-04-A.stl" scale="0.001 0.001 0.001"/>
         </geometry>
       </collision>
     </link>  
     <link name="end_effector_link">
       <visual>
         <geometry>
-          <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/left/end_effector_LWR50L-03-00001-A.stl" scale="0.001 0.001 0.001"/>
+          <mesh filename="package://mfja_motoman_hc10/meshes/hand/left/end_effector_LWR50L-03-00001-A.stl" scale="0.001 0.001 0.001"/>
         </geometry>
         <material name="white_smoke"/>
       </visual>
       <collision>
         <geometry>
-          <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/left/end_effector_LWR50L-03-00001-A.stl" scale="0.001 0.001 0.001"/>
+          <mesh filename="package://mfja_motoman_hc10/meshes/hand/left/end_effector_LWR50L-03-00001-A.stl" scale="0.001 0.001 0.001"/>
         </geometry>
       </collision>
     </link>  
     <link name="mors_link1">
         <visual>
           <geometry>
-            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/left/mors_for_LWR50L-03-00001-A.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://mfja_motoman_hc10/meshes/hand/left/mors_for_LWR50L-03-00001-A.stl" scale="0.001 0.001 0.001"/>
           </geometry>
           <material name="silver"/>
         </visual>
         <collision>
           <geometry>
-            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/left/mors_for_LWR50L-03-00001-A.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://mfja_motoman_hc10/meshes/hand/left/mors_for_LWR50L-03-00001-A.stl" scale="0.001 0.001 0.001"/>
           </geometry>
         </collision>
       </link>
       <link name="mors_link2">
         <visual>
           <geometry>
-            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/left/mors_for_LWR50L-03-00001-A.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://mfja_motoman_hc10/meshes/hand/left/mors_for_LWR50L-03-00001-A.stl" scale="0.001 0.001 0.001"/>
           </geometry>
           <material name="silver"/>
         </visual>
         <collision>
           <geometry>
-            <mesh filename="package://motoman_hc10_moveit_config/meshes/hand/left/mors_for_LWR50L-03-00001-A.stl" scale="0.001 0.001 0.001"/>
+            <mesh filename="package://mfja_motoman_hc10/meshes/hand/left/mors_for_LWR50L-03-00001-A.stl" scale="0.001 0.001 0.001"/>
           </geometry>
         </collision>
       </link>
