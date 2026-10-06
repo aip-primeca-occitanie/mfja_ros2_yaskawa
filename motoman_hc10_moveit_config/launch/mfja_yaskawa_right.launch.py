@@ -1,26 +1,40 @@
 from launch import LaunchDescription
-from launch.actions import GroupAction, IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.actions import DeclareLaunchArgument, GroupAction, OpaqueFunction
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import PushRosNamespace
-from ament_index_python.packages import get_package_share_directory
-import os
+from moveit_configs_utils import MoveItConfigsBuilder
+from moveit_configs_utils.launches import generate_demo_launch
 
-def generate_launch_description():
-    pkg_share = get_package_share_directory('motoman_hc10_moveit_config')
-    demo_launch = os.path.join(pkg_share, 'launch', 'demo.launch.py')
 
-    # Robot 1 setup
-    yaskawa_right_group = GroupAction([
-        PushRosNamespace('yaskawa_RIGHT'),
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(demo_launch),
-            launch_arguments={
-                'use_fake_hardware': 'true',  # or 'false'
-                'tf_prefix': 'yaskawa_RIGHT_',
-            }.items()
+def launch_setup(context, *args, **kwargs):
+    # Retrieve boolean argument as lower-case string ("true" or "false")
+    use_fake_hw = LaunchConfiguration("use_fake_hardware").perform(context).lower()
+
+    moveit_config = (
+        MoveItConfigsBuilder("yaskawa_RIGHT", package_name="motoman_hc10_moveit_config")
+        .robot_description(
+            mappings={
+                "use_fake_hardware": use_fake_hw,
+                #"prefix": "left_",
+            }
         )
+        .to_moveit_configs()
+    )
+
+    namespaced_demo = GroupAction([
+        PushRosNamespace("yaskawa_RIGHT"),
+        generate_demo_launch(moveit_config)
     ])
 
+    return [namespaced_demo]
+
+
+def generate_launch_description():
     return LaunchDescription([
-        yaskawa_right_group,
+        DeclareLaunchArgument(
+            "use_fake_hardware",
+            default_value="true",
+            description="Set 'false' for real hardware, 'true' for fake hardware.",
+        ),
+        OpaqueFunction(function=launch_setup),
     ])

@@ -59,13 +59,14 @@ if __name__=="__main__":
     args = parser.parse_args()
 
     if args.filename is None:
-        filename = '../trajectories/trajectory.csv'
+        filename = '../trajectories/trajectory1.csv'
     else:
         filename = args.filename
 
     # Example initial and goal positions
-    qi = [-0.23163650929927826, 0.24303115904331207, -0.9070761203765869, -0.04309574142098427, -0.28723666071891785, 0.34613490104675293]
-    qf = [-0.139, -0.063, -0.545, -0.139, -1.109, 0.346]
+    qi = [0,0,0,0,0,0]
+    qf = [0,0,0,0,-1.57,0]
+    # qf = [-0.139, -0.063, -0.545, -0.139, -1.109, 0.346]
     # qi=[0.4419472813606262, 0.13577520847320557, 1.0137178897857666, -0.7563529014587402, -0.2653222978115082, 0.03390097618103027]
     # qf = np.copy(qi)
     # qf[0] = qf[0]+0.34

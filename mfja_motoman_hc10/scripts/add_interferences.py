@@ -11,7 +11,6 @@ class MoveGroupPythonIntefaceTutorial(object):
     super(MoveGroupPythonIntefaceTutorial, self).__init__()
 
     moveit_commander.roscpp_initialize(sys.argv)
-    # rospy.init_node('display_interferences')
     rclpy.init(args=sys.argv)
     node = rclpy.create_node('display_interferences')
 
@@ -21,39 +20,12 @@ class MoveGroupPythonIntefaceTutorial(object):
     self.robot = moveit_commander.RobotCommander()
     self.scene = moveit_commander.PlanningSceneInterface()
 
-  def wait_for_state_update_loop(self):
-    # cancel timer after the specified timeout
-    if (self.get_clock().now() - self.wait_start_time >= timeout):
-      self.wait_timer.cancel()
-
-    scene = self.scene
-    box_name = self.box_name
-
-    # Test if the box is in attached objects
-    attached_objects = scene.get_attached_objects([box_name])
-    is_attached = len(attached_objects.keys()) > 0
-
-    # Test if the box is in the scene.
-    # Note that attaching the box will remove it from known_objects
-    is_known = box_name in scene.get_known_object_names()
-
-    # Test if we are in the expected state
-    if (self.box_is_attached == is_attached) and (self.box_is_known == is_known):
-      return True
-
   def wait_for_state_update(self, box_is_known=False, box_is_attached=False, timeout=4):
     scene = self.scene
     box_name = self.box_name
-    timer_period = 0.1
-
-    self.box_is_known = box_is_known
-    self.box_is_attached = box_is_attached
-    self.wait_timeout = timeout
+    start = rospy.get_time()
+    seconds = rospy.get_time()
     
-    self.wait_timer = self.create_timer(timer_period, self.wait_for_state_update_loop)
-    self.wait_start_time = self.get_clock().now()
-
-
     while (seconds - start < timeout) and not rospy.is_shutdown():
       # Test if the box is in attached objects
       attached_objects = scene.get_attached_objects([box_name])
