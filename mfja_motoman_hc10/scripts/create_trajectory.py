@@ -55,6 +55,9 @@ if __name__=="__main__":
 
     # Get trajectory file path from user input
     parser = argparse.ArgumentParser()
+    parser.add_argument("q1")
+    parser.add_argument("q2")
+    parser.add_argument("--filename")
     parser.add_argument("--filename")
     args = parser.parse_args()
 
@@ -66,10 +69,6 @@ if __name__=="__main__":
     # Example initial and goal positions
     qi = [0,0,0,0,0,0]
     qf = [0,0,0,0,-1.57,0]
-    # qf = [-0.139, -0.063, -0.545, -0.139, -1.109, 0.346]
-    # qi=[0.4419472813606262, 0.13577520847320557, 1.0137178897857666, -0.7563529014587402, -0.2653222978115082, 0.03390097618103027]
-    # qf = np.copy(qi)
-    # qf[0] = qf[0]+0.34
 
     # Compute and write the trajectory
     traj = create_traj(qi, qf)

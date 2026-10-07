@@ -1,33 +1,31 @@
 import os
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration, PythonExpression
+from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from moveit_configs_utils import MoveItConfigsBuilder
 from ament_index_python.packages import get_package_share_directory
 
 
-def generate_launch_description():
-    ns_arg = DeclareLaunchArgument(
-        "namespace",
-        default_value="yaskawa_RIGHT",
-        description="Namespace for the robot nodes and topics"
-    )
+def launch_setup(context, *args, **kwargs):
+    # Get robot side argument ('left' or 'right')
+    robot_side = LaunchConfiguration("robot").perform(context).lower()
+    side_upper = robot_side.upper()
 
-    # # Formats to '/yaskawa_RIGHT'
-    ns = PythonExpression(["'/yaskawa_' + '", LaunchConfiguration("namespace"), "'.lstrip('/')"])
+    # Formats to 'yaskawa_RIGHT' or 'yaskawa_LEFT'
+    ns = f"yaskawa_{side_upper}"
 
     pkg_share = get_package_share_directory("motoman_hc10_moveit_config")
 
-    # Define explicit paths to your config files
-    urdf_path = os.path.join(pkg_share, "config", "yaskawa_RIGHT.urdf.xacro")
-    srdf_path = os.path.join(pkg_share, "config", "yaskawa_RIGHT.srdf")
+    # Define explicit paths dynamically based on side argument
+    urdf_path = os.path.join(pkg_share, "config", f"yaskawa_{side_upper}.urdf.xacro")
+    srdf_path = os.path.join(pkg_share, "config", f"yaskawa_{side_upper}.srdf")
     kinematics_path = os.path.join(pkg_share, "config", "kinematics.yaml")
     joint_limits_path = os.path.join(pkg_share, "config", "joint_limits.yaml")
     traj_exec_path = os.path.join(pkg_share, "config", "moveit_controllers.yaml")
 
     moveit_config = (
-        MoveItConfigsBuilder("yaskawa_RIGHT", package_name="motoman_hc10_moveit_config")
+        MoveItConfigsBuilder(f"yaskawa_{side_upper}", package_name="motoman_hc10_moveit_config")
         .robot_description(file_path=urdf_path)
         .robot_description_semantic(file_path=srdf_path)
         .robot_description_kinematics(file_path=kinematics_path)
@@ -39,7 +37,7 @@ def generate_launch_description():
 
     # Convert configs to dict and inject move_group_namespace explicitly
     moveit_config_dict = moveit_config.to_dict()
-    moveit_config_dict.update({"move_group_namespace": ns})
+    moveit_config_dict.update({"move_group_namespace": f"/{ns}"})
 
     # 1. Robot State Publisher
     robot_state_publisher_node = Node(
@@ -59,7 +57,7 @@ def generate_launch_description():
         parameters=[moveit_config_dict],
     )
 
-# 3. RViz Node
+    # 3. RViz Node
     rviz_node = Node(
         package="rviz2",
         executable="rviz2",
@@ -70,7 +68,7 @@ def generate_launch_description():
         )],
         parameters=[
             moveit_config.to_dict(),
-            {"move_group_namespace": ns},  # Explicitly force RViz MoveGroup NS
+            {"move_group_namespace": f"/{ns}"},  # Explicitly force RViz MoveGroup NS
             {"use_sim_time": False},
         ],
         remappings=[
@@ -79,9 +77,20 @@ def generate_launch_description():
         ],
     )
 
-    return LaunchDescription([
-        ns_arg,
+    return [
         robot_state_publisher_node,
         move_group_node,
         rviz_node,
+    ]
+
+
+def generate_launch_description():
+    return LaunchDescription([
+        DeclareLaunchArgument(
+            "robot",
+            default_value="right",
+            description="Robot side to launch: 'left' or 'right'",
+            choices=["left", "right"],
+        ),
+        OpaqueFunction(function=launch_setup),
     ])

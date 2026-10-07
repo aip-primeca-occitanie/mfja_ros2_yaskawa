@@ -24,7 +24,18 @@ install(
     share/${PROJECT_NAME}/
 )
 
-install(PROGRAMS scripts/add_interferences.py scripts/execute_trajectory.py DESTINATION lib/${PROJECT_NAME})
+install(
+  PROGRAMS
+    scripts/add_interferences.py
+    scripts/create_trajectory_from_current.py
+    scripts/create_trajectory.py
+    scripts/execute_trajectory_sim.py
+    scripts/execute_trajectory.py
+    scripts/execute_trajectory_sim.py
+    scripts/motoros2_debug_listener.py
+  DESTINATION
+    lib/${PROJECT_NAME}
+)
 
 
 ament_package()

@@ -4,7 +4,6 @@ from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 from moveit_configs_utils import MoveItConfigsBuilder
-from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
     ns_arg = DeclareLaunchArgument(
@@ -16,32 +15,13 @@ def generate_launch_description():
     # # Formats to '/yaskawa_LEFT'
     ns = PythonExpression(["'/' + '", LaunchConfiguration("namespace"), "'.lstrip('/')"])
 
-    pkg_share = get_package_share_directory("motoman_hc10_moveit_config")
-
-    # Define explicit paths to your config files
-    urdf_path = os.path.join(pkg_share, "config", "yaskawa_RIGHT.urdf.xacro")
-    srdf_path = os.path.join(pkg_share, "config", "yaskawa_RIGHT.srdf")
-    kinematics_path = os.path.join(pkg_share, "config", "kinematics.yaml")
-    joint_limits_path = os.path.join(pkg_share, "config", "joint_limits.yaml")
-    traj_exec_path = os.path.join(pkg_share, "config", "moveit_controllers_RIGHT.yaml")
-
-    moveit_config = (
-        MoveItConfigsBuilder("yaskawa_RIGHT", package_name="motoman_hc10_moveit_config")
-        .robot_description(file_path=urdf_path)
-        .robot_description_semantic(file_path=srdf_path)
-        .robot_description_kinematics(file_path=kinematics_path)
-        .joint_limits(file_path=joint_limits_path)
-        .trajectory_execution(file_path=traj_exec_path)
-        .to_moveit_configs()
-    )
-
     # Load MoveIt configuration
     moveit_config = (
         MoveItConfigsBuilder("yaskawa_LEFT", package_name="motoman_hc10_moveit_config")
         # .robot_description(file_path="config/motoman_hc10.urdf.xacro")
         # .robot_description_semantic(file_path="config/motoman_hc10.srdf")
         .planning_pipelines(pipelines=["ompl"])
-        .trajectory_execution(file_path="config/moveit_controllers_LEFT.yaml")
+        .trajectory_execution(file_path="config/moveit_controllers.yaml")
         .to_moveit_configs()
     )
 

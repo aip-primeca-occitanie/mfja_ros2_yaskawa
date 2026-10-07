@@ -4,6 +4,7 @@ import sys
 import csv
 import argparse
 import time
+import signal
 from pathlib import Path
 from typing import Optional, List, Tuple
 
@@ -40,6 +41,9 @@ class MotoROS2SingleTrajectoryExecutor(Node):
         # Latest cached states
         self.latest_joint_state: Optional[JointState] = None
         self.latest_robot_status: Optional[RobotStatus] = None
+
+        # Track active goal handle for clean cancellation on Ctrl+C
+        self.current_goal_handle = None
 
         # ------------------------------------------------------------------
         # Step 1: Subscriptions, Service Clients & Action Client
@@ -113,7 +117,7 @@ class MotoROS2SingleTrajectoryExecutor(Node):
         start_time = time.time()
 
         while rclpy.ok():
-            rclpy.spin_once(self, timeout_sec=0.1)
+            rclpy.spin_once(self, timeout_sec=0.05)
 
             if time.time() - start_time > timeout_sec:
                 raise RuntimeError("Timeout waiting for robot_status or joint_states messages.")
@@ -127,29 +131,19 @@ class MotoROS2SingleTrajectoryExecutor(Node):
                 if positions:
                     self.get_logger().info("Robot verified IDLE. Current joint state acquired.")
                     return positions
+            else:
+                self.get_logger().info(str(self.latest_robot_status.in_motion.val))
 
             self.get_logger().info("Waiting for robot to become IDLE...", throttle_duration_sec=2.0)
 
     # ------------------------------------------------------------------
-    # Step 3: Construct Trajectory (with current state as point 0)
+    # Step 3: Read CSV Points & Construct Trajectories
     # ------------------------------------------------------------------
-    def read_and_construct_trajectories(
-        self, 
-        filename: str, 
-        current_positions: List[float], 
-        Ts: float = 0.1, 
-        max_joint_speed: float = 0.2
-    ) -> Tuple[Optional[JointTrajectory], JointTrajectory]:
-        """
-        Reads CSV file and checks for >200 point limit.
-        Returns a tuple: (lead_in_trajectory, main_trajectory)
-        - lead_in_trajectory: None if arm is already at CSV start point.
-        """
+    def read_csv_points(self, filename: str) -> List[List[float]]:
         file_path = Path(filename)
         if not file_path.is_file():
             raise FileNotFoundError(f"Trajectory file not found: {file_path.resolve()}")
 
-        # Read CSV raw points
         csv_points = []
         with open(file_path, 'r') as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
@@ -157,7 +151,6 @@ class MotoROS2SingleTrajectoryExecutor(Node):
             for row in csv_reader:
                 csv_points.append(list(map(float, row)))
 
-        # Rule 1: Validate point count
         num_points = len(csv_points)
         if num_points == 0:
             raise ValueError(f"Trajectory CSV file '{file_path.name}' contains no data points.")
@@ -166,56 +159,69 @@ class MotoROS2SingleTrajectoryExecutor(Node):
                 f"Trajectory CSV has {num_points} points, which exceeds the maximum allowed limit of 200 points."
             )
 
-        # Check distance between current state and CSV start point
-        first_csv_point = csv_points[0]
-        max_delta = max([abs(c - t) for c, t in zip(current_positions, first_csv_point)])
+        return csv_points
 
-        lead_in_traj: Optional[JointTrajectory] = None
+    def construct_lead_in_trajectory(
+        self, current_positions: List[float], target_positions: List[float], max_joint_speed: float = 0.2
+    ) -> Optional[JointTrajectory]:
+        max_delta = max([abs(c - t) for c, t in zip(current_positions, target_positions)])
 
-        # Create separate lead-in trajectory if arm is not at CSV start position
-        if max_delta > 0.01:
-            lead_in_duration = max(3.0, max_delta / max_joint_speed)
-            if lead_in_duration >= 20:
-                raise ValueError(f"Lead-in trajecttory TOO LONG")
-            self.get_logger().warn(
-                f"Arm offset from CSV start position by {max_delta:.3f} rad. "
-                f"Constructing SEPARATE lead-in trajectory ({lead_in_duration:.2f}s duration)..."
-            )
+        if max_delta <= 0.01:
+            return None
 
-            lead_in_traj = JointTrajectory()
-            lead_in_traj.joint_names = self.joint_names
-            lead_in_traj.header.stamp = self.get_clock().now().to_msg()
-            lead_in_traj.header.frame_id = f"{self.joint_prefix}base_link"
+        lead_in_duration = max(3.0, max_delta / max_joint_speed)
+        if lead_in_duration >= 20:
+            raise ValueError("Lead-in trajectory TOO LONG")
 
-            # Point 0: Current position at t = 0.0
-            pt0 = JointTrajectoryPoint()
-            pt0.positions = list(current_positions)
-            pt0.velocities = [0.0] * len(self.joint_names)
-            pt0.time_from_start = Duration(seconds=0.0).to_msg()
-            lead_in_traj.points.append(pt0)
+        self.get_logger().warn(
+            f"Arm offset from CSV start position by {max_delta:.3f} rad. "
+            f"Constructing SEPARATE lead-in trajectory ({lead_in_duration:.2f}s duration)..."
+        )
 
-            # Point 1: Target start position of CSV at t = lead_in_duration
-            pt1 = JointTrajectoryPoint()
-            pt1.positions = list(first_csv_point)
-            pt1.velocities = [0.0] * len(self.joint_names)
-            pt1.time_from_start = Duration(seconds=lead_in_duration).to_msg()
-            lead_in_traj.points.append(pt1)
+        lead_in_traj = JointTrajectory()
+        lead_in_traj.joint_names = self.joint_names
+        lead_in_traj.header.stamp = self.get_clock().now().to_msg()
+        lead_in_traj.header.frame_id = f"{self.joint_prefix}base_link"
 
-        # Construct Main Trajectory (Point 0 = CSV start point at t = 0.0)
+        # Point 0: Current position at t = 0.0
+        pt0 = JointTrajectoryPoint()
+        pt0.positions = list(current_positions)
+        pt0.velocities = [0.0] * len(self.joint_names)
+        pt0.time_from_start = Duration(seconds=0.0).to_msg()
+        lead_in_traj.points.append(pt0)
+
+        # Point 1: Target start position of CSV at t = lead_in_duration
+        pt1 = JointTrajectoryPoint()
+        pt1.positions = list(target_positions)
+        pt1.velocities = [0.0] * len(self.joint_names)
+        pt1.time_from_start = Duration(seconds=lead_in_duration).to_msg()
+        lead_in_traj.points.append(pt1)
+
+        return lead_in_traj
+
+    def construct_main_trajectory(self, current_positions: List[float], csv_points: List[List[float]], Ts: float = 0.1) -> JointTrajectory:
         main_traj = JointTrajectory()
         main_traj.joint_names = self.joint_names
         main_traj.header.stamp = self.get_clock().now().to_msg()
         main_traj.header.frame_id = f"{self.joint_prefix}base_link"
 
+        # Mandatory Start Point (t=0.0) from current real state
+        p0 = JointTrajectoryPoint()
+        p0.positions = list(current_positions)
+        p0.velocities = [0.0] * len(self.joint_names)
+        p0.time_from_start = Duration(seconds=0.0).to_msg()
+        main_traj.points.append(p0)
+
+        # Append CSV points offset by Ts
         for idx, pos in enumerate(csv_points):
             pt = JointTrajectoryPoint()
             pt.positions = pos
             pt.velocities = [0.0] * len(self.joint_names)
-            pt.time_from_start = Duration(seconds=idx * Ts).to_msg()
+            pt.time_from_start = Duration(seconds=(idx + 1) * Ts).to_msg()
             main_traj.points.append(pt)
 
         self.get_logger().info(f"Main CSV trajectory loaded with {len(main_traj.points)} points.")
-        return lead_in_traj, main_traj
+        return main_traj
 
     # ------------------------------------------------------------------
     # Steps 4 & 5: Check Active Errors & Reset if needed
@@ -228,7 +234,7 @@ class MotoROS2SingleTrajectoryExecutor(Node):
         self.get_logger().info("Checking robot_status for active errors...")
 
         while rclpy.ok():
-            rclpy.spin_once(self, timeout_sec=0.1)
+            rclpy.spin_once(self, timeout_sec=0.05)
             if self.latest_robot_status is None:
                 continue
 
@@ -243,7 +249,12 @@ class MotoROS2SingleTrajectoryExecutor(Node):
 
                 req = ResetError.Request()
                 future = self.client_reset_error.call_async(req)
-                rclpy.spin_until_future_complete(self, future)
+                
+                while not future.done() and rclpy.ok():
+                    rclpy.spin_once(self, timeout_sec=0.05)
+
+                if not rclpy.ok():
+                    return
 
                 res = future.result()
                 code_val = getattr(res.result_code, 'val', res.result_code) if res else None
@@ -268,16 +279,30 @@ class MotoROS2SingleTrajectoryExecutor(Node):
 
         req = StartTrajMode.Request()
         future = self.client_start_traj_mode.call_async(req)
-        rclpy.spin_until_future_complete(self, future)
+        
+        start_time = time.time()
+        while not future.done() and rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.05)
+            if time.time() - start_time > 5.0:
+                self.get_logger().error("Timeout waiting for start_traj_mode response!")
+                return False
+
+        if not rclpy.ok():
+            return False
 
         res = future.result()
-        if res and res.result_code.value == 1:  # Success
-            self.get_logger().info("MotoROS2 trajectory mode ENABLED successfully.")
+        if res is None:
+            self.get_logger().error("start_traj_mode service call returned None.")
+            return False
+
+        # Support both .value and .val / primitive integer result checks
+        code_val = getattr(res.result_code, 'val', getattr(res.result_code, 'value', res.result_code))
+        if code_val in (0, 1):
+            self.get_logger().info(f"MotoROS2 trajectory mode ENABLED (result_code: {code_val}).")
             return True
         else:
-            code = res.result_code.value if res else 'None'
-            raise RuntimeError(f"Failed to enable trajectory mode. Result code: {code}")
-
+            self.get_logger().error(f"Failed to enable trajectory mode. Result code: {code_val}")
+            return False
 
     # ------------------------------------------------------------------
     # Steps 7, 8, 9, 10: Submit Action Goal & Monitor Execution
@@ -292,19 +317,31 @@ class MotoROS2SingleTrajectoryExecutor(Node):
 
         self.get_logger().info(f"Submitting {description} goal ({len(trajectory.points)} points)...")
         send_goal_future = self.action_client.send_goal_async(goal_msg)
-        rclpy.spin_until_future_complete(self, send_goal_future)
+        
+        while not send_goal_future.done() and rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.05)
 
-        goal_handle = send_goal_future.result()
+        if not rclpy.ok():
+            raise KeyboardInterrupt("Interrupted while sending goal.")
 
-        if not goal_handle.accepted:
+        self.current_goal_handle = send_goal_future.result()
+
+        if not self.current_goal_handle.accepted:
+            self.current_goal_handle = None
             raise RuntimeError(f"{description} goal was REJECTED by MotoROS2 action server.")
 
         self.get_logger().info(f"{description} goal ACCEPTED. Executing...")
 
-        get_result_future = goal_handle.get_result_async()
-        rclpy.spin_until_future_complete(self, get_result_future)
+        get_result_future = self.current_goal_handle.get_result_async()
+        
+        while not get_result_future.done() and rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.05)
+
+        if not rclpy.ok():
+            raise KeyboardInterrupt("Interrupted while executing goal.")
 
         result = get_result_future.result()
+        self.current_goal_handle = None
         error_code = result.result.error_code
 
         if error_code == FollowJointTrajectory.Result.SUCCESSFUL:
@@ -318,7 +355,9 @@ class MotoROS2SingleTrajectoryExecutor(Node):
         if self.client_stop_traj_mode.wait_for_service(timeout_sec=2.0):
             req = Trigger.Request()
             future = self.client_stop_traj_mode.call_async(req)
-            rclpy.spin_until_future_complete(self, future)
+            start_time = time.time()
+            while not future.done() and (time.time() - start_time < 2.0):
+                rclpy.spin_once(self, timeout_sec=0.05)
             self.get_logger().info("MotoROS2 trajectory mode STOPPED.")
 
 
@@ -332,53 +371,89 @@ def main(args=None):
 
     executor = MotoROS2SingleTrajectoryExecutor(arm_selection=parsed_args.robot)
 
-    try:
-        execution_success = False
+    # ------------------------------------------------------------------
+    # Signal Handler for Ctrl+C (SIGINT / SIGTERM)
+    # ------------------------------------------------------------------
+    def signal_handler(sig, frame):
+        executor.get_logger().warn("Ctrl+C detected! Stopping trajectory mode immediately...")
 
-        while not execution_success and rclpy.ok():
-            # Get current state
+        # Cancel active goal if currently executing motion
+        if executor.current_goal_handle is not None:
+            try:
+                executor.current_goal_handle.cancel_goal_async()
+            except Exception:
+                pass
+
+        # Stop MotoROS2 Trajectory Mode
+        executor.stop_trajectory_mode()
+        executor.destroy_node()
+        rclpy.shutdown()
+        sys.exit(0)
+
+    # Register OS signal intercepts
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    try:
+        stop_trying = False
+
+        while not stop_trying and rclpy.ok():
+            # 1. Read CSV upfront
+            csv_points = executor.read_csv_points(parsed_args.filename)
+
+            # 2. Get current position
             current_joint_positions = executor.wait_until_idle_and_get_state()
 
-            # Construct trajectories (validates <=200 points & generates lead-in if needed)
-            lead_in_traj, main_traj = executor.read_and_construct_trajectories(
-                parsed_args.filename, current_joint_positions
-            )
-
-            # Check and clear active errors
+            # 3. Check and clear active errors
             executor.check_and_clear_errors()
 
-            # Enable trajectory mode
+            # 4. Enable trajectory mode
             if not executor.start_trajectory_mode():
                 executor.get_logger().warn("Failed to enable trajectory mode. Restarting workflow...")
                 time.sleep(1.0)
                 continue
 
             try:
-                # 1. Execute Lead-in Trajectory separately (if required)
+                # 5. Execute Lead-in Trajectory separately (if required)
+                lead_in_traj = executor.construct_lead_in_trajectory(current_joint_positions, csv_points[0])
+
                 if lead_in_traj is not None:
                     executor.get_logger().info("Executing LEAD-IN trajectory segment...")
                     executor.execute_trajectory_goal(lead_in_traj, description="Lead-In")
                     
-                    # Verify robot reached start position before starting main trajectory
-                    executor.wait_until_idle_and_get_state()
+                    # Pause to allow joints to settle before sampling fresh position for main trajectory
+                    time.sleep(0.3)
 
-                # 2. Execute Main Trajectory from CSV
+                    # Re-sample actual physical joint position after lead-in finishes
+                    current_joint_positions = executor.wait_until_idle_and_get_state()
+
+                # 6. Construct Main Trajectory with fresh start position
+                main_traj = executor.construct_main_trajectory(current_joint_positions, csv_points)
+
+                # 7. Execute Main Trajectory from CSV
                 executor.get_logger().info("Executing MAIN CSV trajectory...")
                 executor.execute_trajectory_goal(main_traj, description="Main CSV Trajectory")
 
-                execution_success = True
+                # Execution success
+                stop_trying = True
 
             except RuntimeError as err:
-                executor.get_logger().error(f"Execution error: {err}. Retrying workflow...")
+                executor.get_logger().error(f"Execution error: {err}. Cleaning up state and retrying...")
+                executor.stop_trajectory_mode()
                 time.sleep(1.0)
+                # If there was an error, do not retry the same trajectory
+                stop_trying = True
 
+    except (KeyboardInterrupt, SystemExit):
+        executor.get_logger().warn("Execution interrupted by user.")
     except Exception as err:
         executor.get_logger().error(f"Execution interrupted: {err}")
 
     finally:
-        executor.stop_trajectory_mode()
-        executor.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            executor.stop_trajectory_mode()
+            executor.destroy_node()
+            rclpy.shutdown()
 
 
 if __name__ == "__main__":
