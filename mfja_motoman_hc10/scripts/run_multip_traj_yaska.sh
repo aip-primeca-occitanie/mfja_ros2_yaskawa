@@ -3,9 +3,9 @@
 # ==========================================================
 # Run multiple trajectories sequentially on left or right robot
 # Usage:
-#   ./run_multiple_trajectories.sh <num_trajectories> <left|right> [base_name]
+#   ./run_multip_traj_yaska.sh <num_trajectories> <left|right> [base_name]
 # Example:
-#   ./run_multiple_trajectories.sh 3 left trajectory
+#   ./run_multip_traj_yaska.sh 3 left trajectory
 # ==========================================================
 
 DEFAULT_BASE_NAME="trajectoireRadMomoRoro"

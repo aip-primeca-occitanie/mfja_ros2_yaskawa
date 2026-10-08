@@ -132,7 +132,9 @@ class MotoROS2SingleTrajectoryExecutor(Node):
                     self.get_logger().info("Robot verified IDLE. Current joint state acquired.")
                     return positions
             else:
-                self.get_logger().info(str(self.latest_robot_status.in_motion.val))
+                # robot thinks it's moving
+                self.get_logger().info(f"In motion : {str(self.latest_robot_status.in_motion.val)}")
+                time.sleep(0.5)
 
             self.get_logger().info("Waiting for robot to become IDLE...", throttle_duration_sec=2.0)
 
@@ -162,7 +164,7 @@ class MotoROS2SingleTrajectoryExecutor(Node):
         return csv_points
 
     def construct_lead_in_trajectory(
-        self, current_positions: List[float], target_positions: List[float], max_joint_speed: float = 0.2
+        self, current_positions: List[float], target_positions: List[float], max_joint_speed: float = 0.25
     ) -> Optional[JointTrajectory]:
         max_delta = max([abs(c - t) for c, t in zip(current_positions, target_positions)])
 
@@ -171,6 +173,8 @@ class MotoROS2SingleTrajectoryExecutor(Node):
 
         lead_in_duration = max(3.0, max_delta / max_joint_speed)
         if lead_in_duration >= 20:
+            self.get_logger().info(f"Current position: {str(current_positions)}")
+            self.get_logger().info(f"Target position: {str(target_positions)}")
             raise ValueError("Lead-in trajectory TOO LONG")
 
         self.get_logger().warn(
@@ -239,8 +243,8 @@ class MotoROS2SingleTrajectoryExecutor(Node):
                 continue
 
             if self.latest_robot_status.in_error.val != 0:
-                err_code = self.latest_robot_status.error_code
-                self.get_logger().warn(f"Active robot ERROR detected (code: {err_code}). Calling reset_error...")
+                err_code = self.latest_robot_status.error_codes
+                self.get_logger().warn(f"Active robot ERROR detected (code: {str(err_code)}). Calling reset_error...")
 
                 if not self.client_reset_error.wait_for_service(timeout_sec=2.0):
                     self.get_logger().error("reset_error service unavailable. Retrying...")
@@ -339,6 +343,8 @@ class MotoROS2SingleTrajectoryExecutor(Node):
 
         if not rclpy.ok():
             raise KeyboardInterrupt("Interrupted while executing goal.")
+
+        time.sleep(0.2)
 
         result = get_result_future.result()
         self.current_goal_handle = None
@@ -440,7 +446,6 @@ def main(args=None):
             except RuntimeError as err:
                 executor.get_logger().error(f"Execution error: {err}. Cleaning up state and retrying...")
                 executor.stop_trajectory_mode()
-                time.sleep(1.0)
                 # If there was an error, do not retry the same trajectory
                 stop_trying = True
 

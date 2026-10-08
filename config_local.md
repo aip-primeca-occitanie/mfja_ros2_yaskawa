@@ -1,6 +1,13 @@
 # SAE GEII - Yaskawa ROS2
 
-### Réseau
+## VM
+
+- Nom : "YaskawaROS2"
+- VirtualBox
+- Emplacement : E:\Machines_Virtuelles\YaskawaROS2
+- Login : "user" / mdp : "user"
+
+## Réseau
 
 Dans la VM, vérifier que le robot est joignable :
 

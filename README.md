@@ -105,6 +105,16 @@ Robot droit :
 ros2 service call /yaskawa_RIGHT/start_traj_mode motoros2_interfaces/srv/StartTrajMode {}
 ros2 service call /yaskawa_RIGHT/stop_traj_mode std_srvs/srv/Trigger {}
 
+### Executer plusieurs trajectoires
+
+./run_multip_traj_yaska.sh 3 left trajectory
+
+## Troubleshooting
+
+### Erreur en fin de trajectoire
+
+Parfois la trajectoire finit en erreur avec le code -500302 ou -100303, même quand les trajectoires semblent s'être correctement executées.
+
 ## I/O link
 
 Piste à étudier :
