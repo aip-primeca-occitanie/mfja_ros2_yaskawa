@@ -10,7 +10,6 @@
 # No header line with the joint names
 #
 # The script verify each criterion and displays for each if it is respected or not
-
 import os
 import csv
 import math
@@ -128,3 +127,19 @@ def verify_trajectories(n: int, base_path: str):
         # Store the last point of this trajectory for the next iteration
         if len(points) > 0:
             last_point_prev = points[-1]
+            
+        print()
+        
+    # Final Summary
+    if all_passed:
+        print("=== VERIFICATION SUCCESSFUL: All criteria respected! ===")
+    else:
+        print("=== VERIFICATION FAILED: One or more criteria were violated. ===")
+
+if __name__ == "__main__":
+    # Example configuration:
+    # Set your number of trajectories (N) and file path prefix here
+    N_TRAJECTORIES = 5
+    PATH_PREFIX = "trajectory_"  # Will check trajectory_1.csv, trajectory_2.csv, etc.
+    
+    verify_trajectories(N_TRAJECTORIES, PATH_PREFIX)
