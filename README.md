@@ -4,7 +4,7 @@
 
 ### Réseau
 
-Voir le fichier détaillant la config locale : README_config_locale.md
+La configuration locale est détaillée sur le Moodle de la plateforme.
 
 ### Lancer l'agent microROS
 
