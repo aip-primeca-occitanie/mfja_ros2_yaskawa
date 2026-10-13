@@ -10,13 +10,17 @@ Ce dépôt regroupe le nécessaire pour contrôler les robots Yaskawa HC10 et HC
 
 ## Grandes étapes
 
-Avant d'exécuter une trajectoire :
+Pour le vrai hardware :
 
-- Vérifier la configuration réseau de la machine Ubuntu
-- (vrai hardware) Lancer l'agent microROS
-- (vrai hardware, optionnel) Lancer RViz
-- (faux hardware) Lancer la simulation et RViz
-- Exécuter une trajectoire
+- [Vérifier la configuration réseau de la machine Ubuntu](#Réseau)
+- [Lancer l'agent microROS](#Lancer-l'agent-microROS)
+- (optionnel) [Lancer RViz](#Visualiser-le-robot)
+- [Exécuter une trajectoire](#Executer-une-trajectoire(vrai-hardware))
+
+Pour le faux hardware (simulation) :
+
+- (faux hardware) [Lancer la simulation et RViz](#Lancer-la-simulation)
+- [Executer une trajectoire](#Executer-une-trajectoire(simulation))
 
 ## Setup
 
@@ -89,7 +93,7 @@ ros2 launch motoman_hc10_moveit_config demo_sim.launch.py robot:=right
 ```
 
 
-## Executer une trajectoire
+## Executer une trajectoire (simulation)
 
 ```sh
 ros2 run mfja_motoman_hc10 execute_trajectory_sim.py $TRAJ_PATH/trajectory.csv --robot left
@@ -117,9 +121,13 @@ Pour créer une trajectoire entre deux configurations q1 et q2 :
 
 TODO
  
-### Executer une trajectoire
+### Executer une trajectoire (vrai hardware)
 
-La clé sur le teach pendant du robot doit être en mode "remote".
+La clé sur le teach pendant du robot doit être en mode "remote". Ce script exécute toutes les étapes décrites dans le README.md de motoROS2, à savoir :
+
+
+
+
 
 ```sh
 ros2 run mfja_motoman_hc10 execute_trajectory.py $TRAJ_PATH/trajectory.csv --robot left
