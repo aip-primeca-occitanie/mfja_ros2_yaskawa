@@ -1,5 +1,23 @@
 # MFJA ROS2 Yaskawa
 
+Ce dépôt regroupe le nécessaire pour contrôler les robots Yaskawa HC10 et HC10DT via ROS2. Il utilise [MotoROS2](https://github.com/yaskawa-global/motoros2).
+
+## Prérequis
+
+- Une machine Ubuntu 24.04 connectée au même réseau que les robots
+- ROS2 Jazzy et docker installé sur cette machine
+- [MotoROS2](https://github.com/yaskawa-global/motoros2) installé sur les contrôleurs des robots
+
+## Grandes étapes
+
+Avant d'exécuter une trajectoire :
+
+- Vérifier la configuration réseau de la machine Ubuntu
+- (vrai hardware) Lancer l'agent microROS
+- (vrai hardware, optionnel) Lancer RViz
+- (faux hardware) Lancer la simulation et RViz
+- Exécuter une trajectoire
+
 ## Setup
 
 ### Réseau
@@ -25,15 +43,6 @@ alias runmicrorosdocker=docker run \
   microros/micro-ros-agent:jazzy \
     udp4 \
     --port 8888
-```
-
-### Debug
-
-Pour débugger et voir l'état des robots :
-
-```bash
-source ~/colcon_ws/install/setup.bash 
-ros2 run mfja_motoman_hc10 debug_listener.py 
 ```
 
 Une fois que l'agent tourne, vérifiez que vous voyez les robots :
@@ -147,8 +156,18 @@ ros2 service call /yaskawa_RIGHT/stop_traj_mode std_srvs/srv/Trigger {}
 
 Parfois la trajectoire finit en erreur avec le code -500302 ou -100303, même quand les trajectoires semblent s'être correctement executées.
 
+### Debug de MotoROS2
+
+Le script debug_listener.py provient de MotoROS2 et permet de voir l'état des robots :
+
+```bash
+source ~/colcon_ws/install/setup.bash 
+ros2 run mfja_motoman_hc10 debug_listener.py 
+```
+
 ## I/O link
 
 Piste à étudier :
 https://github.com/b-robotized/motoros2_hw_interfaces
+
 
