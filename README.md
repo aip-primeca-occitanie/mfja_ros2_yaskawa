@@ -49,13 +49,19 @@ alias runmicrorosdocker=docker run \
     --port 8888
 ```
 
+### Debug de MotoROS2
+
+Le script debug_listener.py provient de MotoROS2 et permet de voir l'état des robots :
+
+```bash
+source ~/colcon_ws/install/setup.bash 
+ros2 run mfja_motoman_hc10 debug_listener.py 
+```
+
 Une fois que l'agent tourne, vérifiez que vous voyez les robots :
 
 ```sh
 ros2 topic echo /yaskawa_LEFT/joint_states --once
-```
-
-```sh
 ros2 topic echo /yaskawa_RIGHT/joint_states --once
 ```
 
@@ -126,9 +132,6 @@ TODO
 La clé sur le teach pendant du robot doit être en mode "remote". Ce script exécute toutes les étapes décrites dans le README.md de motoROS2, à savoir :
 
 
-
-
-
 ```sh
 ros2 run mfja_motoman_hc10 execute_trajectory.py $TRAJ_PATH/trajectory.csv --robot left
 ros2 run mfja_motoman_hc10 execute_trajectory.py $TRAJ_PATH/trajectory.csv --robot right
@@ -164,14 +167,21 @@ ros2 service call /yaskawa_RIGHT/stop_traj_mode std_srvs/srv/Trigger {}
 
 Parfois la trajectoire finit en erreur avec le code -500302 ou -100303, même quand les trajectoires semblent s'être correctement executées.
 
-### Debug de MotoROS2
 
-Le script debug_listener.py provient de MotoROS2 et permet de voir l'état des robots :
+### Cannot enable trajectory mode (cannot enable servo power)
 
-```bash
-source ~/colcon_ws/install/setup.bash 
-ros2 run mfja_motoman_hc10 debug_listener.py 
+S'il y a une erreur comme :
 ```
+[ERROR] [1792662097.426931669] [yaskawa_RIGHT.motoros2_single_trajectory_executor]: Failed to enable trajectory mode. Result code: 102
+```
+
+ou :
+
+```
+motoros2_interfaces.srv.StartTrajMode_Response(result_code=motoros2_interfaces.msg.MotionReadyEnum(value=102), message="The controller has an active Error: Can't turn on servo because: 'Servo power cannot be turned on' (0x3450)")
+```
+
+La cause est probablement une porte de sécurité laissée ouverte. Le robot ne peut pas démarrer la puissance en mode remote tant que le circuit de sécurité n'est pas fermé. Fermez les portes et recommencez.
 
 ## I/O link
 
