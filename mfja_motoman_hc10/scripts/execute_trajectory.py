@@ -18,6 +18,7 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from control_msgs.action import FollowJointTrajectory
+from control_msgs.msg import JointTolerance
 
 # MotoROS2 specific interfaces
 from industrial_msgs.msg import RobotStatus
@@ -26,17 +27,31 @@ from std_srvs.srv import Trigger
 
 
 class MotoROS2SingleTrajectoryExecutor(Node):
-    def __init__(self, arm_selection: str):
+    def __init__(self, arm_selection: str, real_robot=True):
+        self.REAL_ROBOT = real_robot
         prefix = f"yaskawa_{arm_selection.upper()}"
-        node_namespace = f"/{prefix}"
+        
+        if self.REAL_ROBOT:
+            # Namespace of real robot : /yaskawa_LEFT/ or /yaskawa_RIGHT/
+            node_namespace = f"/{prefix}"
+            action_client_name = 'follow_joint_trajectory'
+        else:
+            # In simulation : no namespace
+            node_namespace = None
+            action_client_name = "/dn2p1_controller/follow_joint_trajectory"
 
         super().__init__('motoros2_single_trajectory_executor', namespace=node_namespace)
+
+        if self.REAL_ROBOT:
+            self.get_logger().info("Trajectory Executor for REAL hardware" + str(self.get_namespace()))
+        else:
+            self.get_logger().info("Trajectory Executor for FAKE hardware in SIMULATION" + str(self.get_namespace()))
 
         self.arm_selection = arm_selection.upper()
         self.joint_prefix = f"{prefix}_"
 
         # Initialize empty — auto-detect joint names from first /joint_states message
-        self.joint_names: List[str] = []
+        self.joint_names: List[str] = ['joint_1', 'joint_2', 'joint_3', 'joint_4', 'joint_5', 'joint_6']
 
         # Latest cached states
         self.latest_joint_state: Optional[JointState] = None
@@ -60,18 +75,19 @@ class MotoROS2SingleTrajectoryExecutor(Node):
         self.sub_joint_states = self.create_subscription(
             JointState, 'joint_states', self._joint_state_callback, qos_profile
         )
-        self.sub_robot_status = self.create_subscription(
-            RobotStatus, 'robot_status', self._robot_status_callback, qos_profile
-        )
+        if self.REAL_ROBOT:
+            self.sub_robot_status = self.create_subscription(
+                RobotStatus, 'robot_status', self._robot_status_callback, qos_profile
+            )
 
         # Service Clients
-        self.client_start_traj_mode = self.create_client(StartTrajMode, 'start_traj_mode')
-        self.client_reset_error = self.create_client(ResetError, 'reset_error')
-        self.client_stop_traj_mode = self.create_client(Trigger, 'stop_traj_mode')
+            self.client_start_traj_mode = self.create_client(StartTrajMode, 'start_traj_mode')
+            self.client_reset_error = self.create_client(ResetError, 'reset_error')
+            self.client_stop_traj_mode = self.create_client(Trigger, 'stop_traj_mode')
 
         # Action Client
         self.action_client = ActionClient(
-            self, FollowJointTrajectory, 'follow_joint_trajectory'
+            self, FollowJointTrajectory, action_client_name
         )
 
         self.get_logger().info(
@@ -110,7 +126,7 @@ class MotoROS2SingleTrajectoryExecutor(Node):
     # ------------------------------------------------------------------
     def wait_until_idle_and_get_state(self, timeout_sec: float = 10.0) -> List[float]:
         """
-        Retrieve message from robot_status topic to verify robot is idle 
+        Retrieve message from robot_status topic to verify robot is idle (if using real robot)
         (inspect in_motion) and store current JointState from joint_states.
         """
         self.get_logger().info("Checking robot_status and fetching current JointState...")
@@ -122,21 +138,30 @@ class MotoROS2SingleTrajectoryExecutor(Node):
             if time.time() - start_time > timeout_sec:
                 raise RuntimeError("Timeout waiting for robot_status or joint_states messages.")
 
-            if self.latest_robot_status is None or self.latest_joint_state is None:
-                continue
-
-            # Verify in_motion == 0 (TriState.FALSE / Idle)
-            if self.latest_robot_status.in_motion.val == 0:
+            if not self.REAL_ROBOT and self.latest_joint_state is not None:
+                # Simulation and we have the joint positions
                 positions = self.get_ordered_joint_positions()
                 if positions:
-                    self.get_logger().info("Robot verified IDLE. Current joint state acquired.")
+                    self.get_logger().info("Current joint state acquired.")
                     return positions
-            else:
-                # robot thinks it's moving
-                self.get_logger().info(f"In motion : {str(self.latest_robot_status.in_motion.val)}")
-                time.sleep(0.5)
 
-            self.get_logger().info("Waiting for robot to become IDLE...", throttle_duration_sec=2.0)
+            if self.REAL_ROBOT:
+                # Real robot, we need both robot status and positions
+                if self.latest_robot_status is None or self.latest_joint_state is None:
+                    continue
+
+                # Verify in_motion == 0 (TriState.FALSE / Idle)
+                if self.latest_robot_status.in_motion.val == 0:
+                    positions = self.get_ordered_joint_positions()
+                    if positions:
+                        self.get_logger().info("Robot verified IDLE. Current joint state acquired.")
+                        return positions
+                else:
+                    # robot thinks it's moving
+                    self.get_logger().info(f"In motion : {str(self.latest_robot_status.in_motion.val)}")
+                    time.sleep(0.5)
+
+                self.get_logger().info("Waiting for robot to become IDLE...", throttle_duration_sec=2.0)
 
     # ------------------------------------------------------------------
     # Step 3: Read CSV Points & Construct Trajectories
@@ -164,7 +189,7 @@ class MotoROS2SingleTrajectoryExecutor(Node):
         return csv_points
 
     def construct_lead_in_trajectory(
-        self, current_positions: List[float], target_positions: List[float], max_joint_speed: float = 0.25
+        self, current_positions: List[float], target_positions: List[float], max_joint_speed: float = 0.8
     ) -> Optional[JointTrajectory]:
         max_delta = max([abs(c - t) for c, t in zip(current_positions, target_positions)])
 
@@ -224,6 +249,12 @@ class MotoROS2SingleTrajectoryExecutor(Node):
             pt.time_from_start = Duration(seconds=(idx + 1) * Ts).to_msg()
             main_traj.points.append(pt)
 
+        # Explicitly enforce 0.0 velocity on the FINAL point to avoid overshoot
+        main_traj.points[-1].velocities = [0.0] * len(self.joint_names)
+        main_traj.points[-1].accelerations = [0.0] * len(self.joint_names)
+        # Slow down the movement for the last point
+        main_traj.points[-1].time_from_start = Duration(seconds=(idx + 2) * Ts).to_msg()
+
         self.get_logger().info(f"Main CSV trajectory loaded with {len(main_traj.points)} points.")
         return main_traj
 
@@ -235,6 +266,10 @@ class MotoROS2SingleTrajectoryExecutor(Node):
         Retrieve robot_status to inspect in_error and error_code fields.
         If there are active errors, remedy by calling reset_error service.
         """
+        if not self.REAL_ROBOT:
+            self.get_logger().info("Only fake hardware: no need to monitor active errors")
+            return
+
         self.get_logger().info("Checking robot_status for active errors...")
 
         while rclpy.ok():
@@ -276,6 +311,10 @@ class MotoROS2SingleTrajectoryExecutor(Node):
     # ------------------------------------------------------------------
     def start_trajectory_mode(self) -> bool:
         """Call start_traj_mode service to put MotoROS2 into trajectory mode."""
+        if not self.REAL_ROBOT:
+            self.get_logger().info("Only fake hardware: no need to start trajectory mode")
+            return True
+        
         self.get_logger().info("Calling start_traj_mode service...")
         if not self.client_start_traj_mode.wait_for_service(timeout_sec=5.0):
             self.get_logger().error("start_traj_mode service unavailable.")
@@ -319,6 +358,17 @@ class MotoROS2SingleTrajectoryExecutor(Node):
         goal_msg = FollowJointTrajectory.Goal()
         goal_msg.trajectory = trajectory
 
+        # Add realistic goal position tolerance (0.01 rad ~= 0.57 deg) to prevent settling errors
+        for joint_name in trajectory.joint_names:
+            tol = JointTolerance()
+            tol.name = joint_name
+            tol.position = 0.01   # 0.01 rad tolerance
+            tol.velocity = 0.05
+            goal_msg.goal_tolerance.append(tol)
+
+        # Allow extra goal time tolerance (e.g., 1.0s) for physical robot settling
+        goal_msg.goal_time_tolerance = Duration(seconds=0.5).to_msg()
+
         self.get_logger().info(f"Submitting {description} goal ({len(trajectory.points)} points)...")
         send_goal_future = self.action_client.send_goal_async(goal_msg)
         
@@ -357,6 +407,10 @@ class MotoROS2SingleTrajectoryExecutor(Node):
 
     def stop_trajectory_mode(self):
         """Call stop_traj_mode service to exit trajectory execution mode."""
+        if not self.REAL_ROBOT:
+            self.get_logger().info("Only fake hardware: no need to stop trajectory mode")
+            return
+
         self.get_logger().info("Calling stop_traj_mode service...")
         if self.client_stop_traj_mode.wait_for_service(timeout_sec=2.0):
             req = Trigger.Request()
@@ -371,11 +425,15 @@ def main(args=None):
     parser = argparse.ArgumentParser(description="MotoROS2 Single Trajectory Executor")
     parser.add_argument("filename", type=str, help="Path to the CSV trajectory file")
     parser.add_argument("--robot", choices=["left", "right"], default="left", help="Target arm ('left' or 'right')")
+    parser.add_argument("--sim", action="store_true", help="Use if executing for the simulated robot instead of real hardware")
 
     parsed_args, ros_args = parser.parse_known_args()
+
+    print(parsed_args)
     rclpy.init(args=ros_args)
 
-    executor = MotoROS2SingleTrajectoryExecutor(arm_selection=parsed_args.robot)
+    REAL_ROBOT = not parsed_args.sim
+    executor = MotoROS2SingleTrajectoryExecutor(arm_selection=parsed_args.robot, real_robot=REAL_ROBOT)
 
     # ------------------------------------------------------------------
     # Signal Handler for Ctrl+C (SIGINT / SIGTERM)
@@ -425,8 +483,13 @@ def main(args=None):
 
                 if lead_in_traj is not None:
                     executor.get_logger().info("Executing LEAD-IN trajectory segment...")
-                    executor.execute_trajectory_goal(lead_in_traj, description="Lead-In")
                     
+                    try:
+                        executor.execute_trajectory_goal(lead_in_traj, description="Lead-In")
+                    except RuntimeError as e:
+                        executor.get_logger().warn("Runtime error during lead-in traj : " + str(e))
+                        executor.get_logger().warn("Continuing to main trajectory ...")
+
                     # Pause to allow joints to settle before sampling fresh position for main trajectory
                     time.sleep(0.3)
 
