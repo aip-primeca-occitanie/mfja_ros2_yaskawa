@@ -83,12 +83,17 @@ export TRAJ_PATH=~/colcon_ws/src/mfja_ros2_yaskawa/mfja_motoman_hc10/trajectorie
 
 ## Simulation
 
+N'oubliez pas si ce n'est pas déjà fait de sourcer le workplace colcon dans chaque terminal :
+
+```sh
+source ~/colcon_ws/install/setup.bash
+```
+
 ### Lancer la simulation
 
 Yaskawa gauche :
 
 ```sh
-source ~/colcon_ws/install/setup.bash
 ros2 launch motoman_hc10_moveit_config demo_sim.launch.py robot:=left
 ```
 
@@ -102,8 +107,8 @@ ros2 launch motoman_hc10_moveit_config demo_sim.launch.py robot:=right
 ## Executer une trajectoire (simulation)
 
 ```sh
-ros2 run mfja_motoman_hc10 execute_trajectory_sim.py $TRAJ_PATH/trajectory.csv --robot left
-ros2 run mfja_motoman_hc10 execute_trajectory_sim.py $TRAJ_PATH/trajectory.csv --robot right
+ros2 run mfja_motoman_hc10 execute_trajectory.py $TRAJ_PATH/trajectory.csv --robot left --sim
+ros2 run mfja_motoman_hc10 execute_trajectory.py $TRAJ_PATH/trajectory.csv --robot right --sim
 ```
 
 ## Vrai hardware
@@ -171,13 +176,13 @@ Parfois la trajectoire finit en erreur avec le code -500302 ou -100303, même qu
 ### Cannot enable trajectory mode (cannot enable servo power)
 
 S'il y a une erreur comme :
-```
+```sh
 [ERROR] [1792662097.426931669] [yaskawa_RIGHT.motoros2_single_trajectory_executor]: Failed to enable trajectory mode. Result code: 102
 ```
 
 ou :
 
-```
+```sh
 motoros2_interfaces.srv.StartTrajMode_Response(result_code=motoros2_interfaces.msg.MotionReadyEnum(value=102), message="The controller has an active Error: Can't turn on servo because: 'Servo power cannot be turned on' (0x3450)")
 ```
 
