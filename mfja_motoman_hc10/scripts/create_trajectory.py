@@ -53,11 +53,14 @@ def write_traj_to_file(traj, filename: str):
 
 if __name__=="__main__":
 
+    # Example initial and goal positions
+    qi = [0,0,0,0,0,0]
+    qf = [0,0,0,0,-1.57,0]
+
     # Get trajectory file path from user input
     parser = argparse.ArgumentParser()
-    parser.add_argument("q1")
-    parser.add_argument("q2")
-    parser.add_argument("--filename")
+    parser.add_argument("q1" nargs=6, type=float, default=[0.0, 0.0, 0.0, 0.0, -1.0, 0.0])
+    parser.add_argument("q2" nargs=6, type=float, default=[0.0, 0.0, 0.0, 0.0, -1.0, 0.0])
     parser.add_argument("--filename")
     args = parser.parse_args()
 
@@ -65,10 +68,6 @@ if __name__=="__main__":
         filename = '../trajectories/trajectory1.csv'
     else:
         filename = args.filename
-
-    # Example initial and goal positions
-    qi = [0,0,0,0,0,0]
-    qf = [0,0,0,0,-1.57,0]
 
     # Compute and write the trajectory
     traj = create_traj(qi, qf)
