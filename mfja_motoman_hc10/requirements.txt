@@ -1,0 +1,5 @@
+# requirements.txt
+numpy>=1.26.0
+customtkinter>=6.0.0
+pymodbus>=3.16.1
+coppeliasim-zmqremoteapi-client>=2.0.4

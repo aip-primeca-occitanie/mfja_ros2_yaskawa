@@ -23,6 +23,8 @@ Pour le faux hardware (simulation) :
 - (faux hardware) [Lancer la simulation et RViz](#Lancer-la-simulation)
 - [Executer une trajectoire](#Executer-une-trajectoire(simulation))
 
+Alternativement, une IHM a été développée par des étudiants GEII pour executer leurs trajectoires, voir (#Utiliser-l-IHM).
+
 ## Setup
 
 ### Réseau
@@ -143,6 +145,12 @@ ros2 run mfja_motoman_hc10 execute_trajectory.py $TRAJ_PATH/trajectory.csv --rob
 ros2 run mfja_motoman_hc10 execute_trajectory.py $TRAJ_PATH/trajectory.csv --robot right
 ```
 
+### Executer plusieurs trajectoires
+
+```sh
+./run_multip_traj_yaska.sh 3 left trajectory
+```
+
 ### Allumer/éteindre la puissance (servos)
 
 La clé sur le teach pendant du robot doit être en mode "remote".
@@ -161,10 +169,34 @@ ros2 service call /yaskawa_RIGHT/start_traj_mode motoros2_interfaces/srv/StartTr
 ros2 service call /yaskawa_RIGHT/stop_traj_mode std_srvs/srv/Trigger {}
 ```
 
-### Executer plusieurs trajectoires
+### Contrôler le robot via RViz
+
+Après avoir lancé RViz et allumé les servos, sous RViz, vous pouvez bouger le robot via la vue 3D ou via la liste des articulations, et cliquer sur "Plan" puis sur "Execute".
+
+## Utiliser l'IHM
+
+### Setup
+
+L'IHM nécessite certains paquets python. Il est recommandé de créer un environnement virtuel python pour les installer et lancer l'IHM.
+
+Créez un environnement virtual que colcon ignorera pendant les builds :
+```sh
+cd ~/colcon_ws/src/mfja_ros2_yaskawa/mfja_motoman_hc10
+python3 -m venv .venv --system-site-packages
+touch .venv/COLCON_IGNORE
+```
+
+Activez l'environnement et installez les paquets requis :
 
 ```sh
-./run_multip_traj_yaska.sh 3 left trajectory
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Lancez l'IHM :
+
+```sh
+python scripts/supervision_IHM.py
 ```
 
 ## Troubleshooting
