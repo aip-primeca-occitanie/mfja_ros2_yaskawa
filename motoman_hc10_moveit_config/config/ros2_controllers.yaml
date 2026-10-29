@@ -30,14 +30,14 @@
         - position
         - velocity
       allow_nonzero_velocity_at_trajectory_end: true
-  hand_group_controller:
-    ros__parameters:
-      joints:
-        - end_effector_adaptater_mors1
-        - end_effector_adaptater_mors2
-      command_interfaces:
-        - position
-      state_interfaces:
-        - position
-        - velocity
-      allow_nonzero_velocity_at_trajectory_end: true
+  # hand_group_controller:
+  #   ros__parameters:
+  #     joints:
+  #       - end_effector_adaptater_mors1
+  #       - end_effector_adaptater_mors2
+  #     command_interfaces:
+  #       - position
+  #     state_interfaces:
+  #       - position
+  #       - velocity
+  #     allow_nonzero_velocity_at_trajectory_end: true

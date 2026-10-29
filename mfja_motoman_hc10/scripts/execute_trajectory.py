@@ -41,17 +41,17 @@ class MotoROS2SingleTrajectoryExecutor(Node):
             action_client_name = "/dn2p1_controller/follow_joint_trajectory"
 
         super().__init__('motoros2_single_trajectory_executor', namespace=node_namespace)
+        self.joint_names: List[str] = []
 
         if self.REAL_ROBOT:
             self.get_logger().info("Trajectory Executor for REAL hardware" + str(self.get_namespace()))
         else:
             self.get_logger().info("Trajectory Executor for FAKE hardware in SIMULATION" + str(self.get_namespace()))
+            # Initialize empty — auto-detect joint names from first /joint_states message
+            self.joint_names: List[str] = ['joint_1', 'joint_2', 'joint_3', 'joint_4', 'joint_5', 'joint_6']
 
         self.arm_selection = arm_selection.upper()
         self.joint_prefix = f"{prefix}_"
-
-        # Initialize empty — auto-detect joint names from first /joint_states message
-        self.joint_names: List[str] = ['joint_1', 'joint_2', 'joint_3', 'joint_4', 'joint_5', 'joint_6']
 
         # Latest cached states
         self.latest_joint_state: Optional[JointState] = None
@@ -189,14 +189,20 @@ class MotoROS2SingleTrajectoryExecutor(Node):
         return csv_points
 
     def construct_lead_in_trajectory(
-        self, current_positions: List[float], target_positions: List[float], max_joint_speed: float = 0.8
+        self, current_positions: List[float],
+        target_positions: List[float],
+        max_joint_speed: float = 0.8,
+        speed_factor: float = 1.0,
     ) -> Optional[JointTrajectory]:
         max_delta = max([abs(c - t) for c, t in zip(current_positions, target_positions)])
 
         if max_delta <= 0.01:
             return None
 
-        lead_in_duration = max(3.0, max_delta / max_joint_speed)
+        # Apply speed factor
+        effective_speed = max_joint_speed * speed_factor
+        lead_in_duration = max(3.0, max_delta / effective_speed)
+        
         if lead_in_duration >= 20:
             self.get_logger().info(f"Current position: {str(current_positions)}")
             self.get_logger().info(f"Target position: {str(target_positions)}")
@@ -204,7 +210,8 @@ class MotoROS2SingleTrajectoryExecutor(Node):
 
         self.get_logger().warn(
             f"Arm offset from CSV start position by {max_delta:.3f} rad. "
-            f"Constructing SEPARATE lead-in trajectory ({lead_in_duration:.2f}s duration)..."
+            f"Constructing SEPARATE lead-in trajectory with speed factor = {speed_factor*100:.0f}% "
+            f"({lead_in_duration:.2f}s duration)  ..."
         )
 
         lead_in_traj = JointTrajectory()
@@ -228,7 +235,13 @@ class MotoROS2SingleTrajectoryExecutor(Node):
 
         return lead_in_traj
 
-    def construct_main_trajectory(self, current_positions: List[float], csv_points: List[List[float]], Ts: float = 0.1) -> JointTrajectory:
+    def construct_main_trajectory(
+        self,
+        current_positions: List[float],
+        csv_points: List[List[float]],
+        Ts: float = 0.1,
+        speed_factor: float = 1.0,
+    ) -> JointTrajectory:
         main_traj = JointTrajectory()
         main_traj.joint_names = self.joint_names
         main_traj.header.stamp = self.get_clock().now().to_msg()
@@ -241,21 +254,26 @@ class MotoROS2SingleTrajectoryExecutor(Node):
         p0.time_from_start = Duration(seconds=0.0).to_msg()
         main_traj.points.append(p0)
 
+        # %TODO : test if this works fine and if needed change how speed factor works
+        # Apply speed factor
+        effective_Ts = Ts / speed_factor
+        
         # Append CSV points offset by Ts
         for idx, pos in enumerate(csv_points):
             pt = JointTrajectoryPoint()
             pt.positions = pos
             pt.velocities = [0.0] * len(self.joint_names)
-            pt.time_from_start = Duration(seconds=(idx + 1) * Ts).to_msg()
+            pt.time_from_start = Duration(seconds=(idx + 1) * effective_Ts).to_msg()
             main_traj.points.append(pt)
 
         # Explicitly enforce 0.0 velocity on the FINAL point to avoid overshoot
         main_traj.points[-1].velocities = [0.0] * len(self.joint_names)
         main_traj.points[-1].accelerations = [0.0] * len(self.joint_names)
         # Slow down the movement for the last point
-        main_traj.points[-1].time_from_start = Duration(seconds=(idx + 2) * Ts).to_msg()
+        main_traj.points[-1].time_from_start = Duration(seconds=(idx + 2) * effective_Ts).to_msg()
 
-        self.get_logger().info(f"Main CSV trajectory loaded with {len(main_traj.points)} points.")
+        self.get_logger().info(f"Main CSV trajectory loaded with "
+            f"{len(main_traj.points)} points (Effective Ts: {effective_Ts:.3f}s).")
         return main_traj
 
     # ------------------------------------------------------------------
@@ -426,14 +444,17 @@ def main(args=None):
     parser.add_argument("filename", type=str, help="Path to the CSV trajectory file")
     parser.add_argument("--robot", choices=["left", "right"], default="left", help="Target arm ('left' or 'right')")
     parser.add_argument("--sim", action="store_true", help="Use if executing for the simulated robot instead of real hardware")
+    parser.add_argument("--speed", type=float, default=1.0, help="Speed factor between 0 and 1")
 
     parsed_args, ros_args = parser.parse_known_args()
-
-    print(parsed_args)
     rclpy.init(args=ros_args)
 
     REAL_ROBOT = not parsed_args.sim
     executor = MotoROS2SingleTrajectoryExecutor(arm_selection=parsed_args.robot, real_robot=REAL_ROBOT)
+
+    if parsed_args.speed <= 0 or parsed_args.speed > 1:
+        raise argparse.ArgumentTypeError(f'Speed factor must be within [0,1]')
+    speed_factor = parsed_args.speed
 
     # ------------------------------------------------------------------
     # Signal Handler for Ctrl+C (SIGINT / SIGTERM)
@@ -479,7 +500,7 @@ def main(args=None):
 
             try:
                 # 5. Execute Lead-in Trajectory separately (if required)
-                lead_in_traj = executor.construct_lead_in_trajectory(current_joint_positions, csv_points[0])
+                lead_in_traj = executor.construct_lead_in_trajectory(current_joint_positions, csv_points[0], speed_factor=speed_factor)
 
                 if lead_in_traj is not None:
                     executor.get_logger().info("Executing LEAD-IN trajectory segment...")
@@ -497,7 +518,7 @@ def main(args=None):
                     current_joint_positions = executor.wait_until_idle_and_get_state()
 
                 # 6. Construct Main Trajectory with fresh start position
-                main_traj = executor.construct_main_trajectory(current_joint_positions, csv_points)
+                main_traj = executor.construct_main_trajectory(current_joint_positions, csv_points, speed_factor=speed_factor)
 
                 # 7. Execute Main Trajectory from CSV
                 executor.get_logger().info("Executing MAIN CSV trajectory...")

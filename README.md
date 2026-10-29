@@ -16,6 +16,7 @@ Pour le vrai hardware :
 - [Lancer l'agent microROS](#Lancer-l'agent-microROS)
 - (optionnel) [Lancer RViz](#Visualiser-le-robot)
 - [Exécuter une trajectoire](#Executer-une-trajectoire(vrai-hardware))
+- [Contrôler le robot via RViz](#Contrôler-le-robot-via-RViz)
 
 Pour le faux hardware (simulation) :
 
@@ -94,13 +95,13 @@ source ~/colcon_ws/install/setup.bash
 Yaskawa gauche :
 
 ```sh
-ros2 launch motoman_hc10_moveit_config demo_sim.launch.py robot:=left
+ros2 launch motoman_hc10_moveit_config demo_mfja.launch.py robot:=left hardware:=sim
 ```
 
 Yaskawa droit :
 
 ```sh
-ros2 launch motoman_hc10_moveit_config demo_sim.launch.py robot:=right
+ros2 launch motoman_hc10_moveit_config demo_mfja.launch.py robot:=right hardware:=sim
 ```
 
 
@@ -116,8 +117,8 @@ ros2 run mfja_motoman_hc10 execute_trajectory.py $TRAJ_PATH/trajectory.csv --rob
 ### Visualiser le robot
 
 ```sh
-ros2 launch motoman_hc10_moveit_config demo_real.launch.py robot:=right
-ros2 launch motoman_hc10_moveit_config demo_real.launch.py robot:=left
+ros2 launch motoman_hc10_moveit_config demo_mfja.launch.py robot:=right hardware:=real
+ros2 launch motoman_hc10_moveit_config demo_mfja.launch.py robot:=left hardware:=real
 ```
 
 ### Créer une trajectoire de test
@@ -134,7 +135,7 @@ TODO
  
 ### Executer une trajectoire (vrai hardware)
 
-La clé sur le teach pendant du robot doit être en mode "remote". Ce script exécute toutes les étapes décrites dans le README.md de motoROS2, à savoir :
+La clé sur le teach pendant du robot doit être en mode "remote". Ce script exécute toutes les étapes décrites dans le README.md de motoROS2, à savoir vérifier l'état du robot, activer la puissance, envoyer la trajectoire, ...
 
 
 ```sh

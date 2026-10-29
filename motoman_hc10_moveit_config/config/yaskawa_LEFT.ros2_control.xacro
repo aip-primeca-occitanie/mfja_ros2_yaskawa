@@ -50,7 +50,7 @@
                 </state_interface>
                 <state_interface name="velocity"/>
             </joint>
-            <joint name="end_effector_adaptater_mors1">
+            <!-- <joint name="end_effector_adaptater_mors1">
                 <command_interface name="position"/>
                 <state_interface name="position">
                   <param name="initial_value">${initial_positions['end_effector_adaptater_mors1']}</param>
@@ -63,7 +63,7 @@
                   <param name="initial_value">${initial_positions['end_effector_adaptater_mors2']}</param>
                 </state_interface>
                 <state_interface name="velocity"/>
-            </joint>
+            </joint> -->
 
         </ros2_control>
     </xacro:macro>
